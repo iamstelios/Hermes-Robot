@@ -4,6 +4,8 @@ import asyncio
 import websockets
 import ev3dev.ev3 as ev3
 import json
+import sys
+import re
 
 def go(to="base"):
     print("I'm going to %s".format(to))
@@ -28,10 +30,15 @@ actions = {"go": go,
            "transfer": transfer
            }
 
+
 @asyncio.coroutine
-def start():
+def handler(ip):
     print("STARTING")
-    websocket = yield from websockets.connect('ws://192.168.137.1:8000/')
+    try:
+        websocket = yield from websockets.connect("ws://%s:8000/" % ip)
+    except OSError:
+        print("Cannot connect to the server")
+        return
     while True:
         try:
             status = "Requesting new instruction"
@@ -58,5 +65,19 @@ def start():
 
     yield from websocket.close()
 
-asyncio.get_event_loop().run_until_complete(start())
+def main():
+    #Default ip address
+    ip = "192.168.137.1"
+    if(len(sys.argv)>1):
+        ip=sys.argv[1]
+        #Check if the arguement given is a well defined ip address
+        pattern = re.compile("\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}")
+        test = pattern.match(ip)
+        if (not test):
+            print("Unacceptable ip address given for the server")
+            return
+    
+    asyncio.get_event_loop().run_until_complete(handler(ip))
 
+if __name__ == "__main__":
+    main()
