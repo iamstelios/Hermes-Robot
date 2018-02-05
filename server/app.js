@@ -26,7 +26,7 @@ const json1 = `{
     "y": 4
   },
   "id": 334,
-  "to": "Beth"
+  "dst": "Beth"
 }`
 
 const json2 = `{
@@ -36,14 +36,14 @@ const json2 = `{
     "y": 3
   },
   "id": 1,
-  "from": "Garry"
+  "src": "Garry"
 }`
 
 const json3 = `{
   "action": "transfer",
   "id": 244,
-  "from": "Chris",
-  "to": "Beth"
+  "src": "Chris",
+  "dst": "Beth"
 }
 `
 var queue = [];
@@ -61,7 +61,8 @@ wss.on('connection', function connection(ws) {
         ws.send(instruction);
         console.log('send: %s', instruction);
       }else{
-        //TODO: Wait?
+        //TODO: If cancel check -- reply -- also update location
+      
       }
       
     }
