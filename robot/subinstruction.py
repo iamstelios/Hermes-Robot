@@ -6,9 +6,10 @@ class SubInstruction(object):
         raise NotImplementedError("run() should be implemented")
     def opposite(self):
         raise NotImplementedError("opposite() should be implemented")
+
 class Move(SubInstruction):
     # Move robot from node A to node B 
-    # Nodes can be either worker stations or junctions or the base
+    # Nodes can be either workstations or junctions or the base
     # Robot should be facing the right direction when starting this
     # instruction (node A -> Node B)
 
@@ -29,7 +30,10 @@ class Move(SubInstruction):
         # if robot is at the start of node A and it is a junction!
         print('Moving from %s to %s' % (self.nodeA.string, self.nodeB.string))
 
+        #TODO: WRITE CODE FOR MOVEMENT HERE!
+
         print('Arrived at %s' % self.nodeB.string)
+        return self.nodeB
     
     def opposite(self):
         from client import junction_endpoints
@@ -45,7 +49,11 @@ class Reverse(SubInstruction):
     # Reverses the position of the robot 180 degrees
     def run(self):
         print('Reversing direction')
+
+        #TODO: WRITE CODE FOR MOVEMENT HERE!
+        
         print('Direction reversed')
+        return None
 
     def opposite(self):
         return Reverse()
@@ -58,7 +66,12 @@ class Pick(SubInstruction):
 
     def run(self):
         print('Picking up box at level %d' % self.level)
+
+        #TODO: WRITE CODE FOR MOVEMENT HERE!
+
         print('Picked up box at level %d' % self.level)
+        return None
+
     def opposite(self):
         return Drop(self.level)
 
@@ -69,25 +82,37 @@ class Drop(SubInstruction):
 
     def run(self):
         print('Dropping box at level %d' % self.level)
+
+        #TODO: WRITE CODE FOR MOVEMENT HERE!
+
         print('Dropped box at level %d' % self.level)
-    
+        return None
+
     def opposite(self):
         return Pick(self.level)
 
 class Pickup(SubInstruction):
-    # Takes the box from the worker station
+    # Takes the box from the workstation
     def run(self):
-        print('Picking up box from worker station')
-        print('Picked up box from worker station')
-    
+        print('Picking up box from workstation')
+
+        #TODO: WRITE CODE FOR MOVEMENT HERE!
+
+        print('Picked up box from workstation')
+        return None
+
     def opposite(self):
         return Delivery()
 
 class Delivery(SubInstruction):
-    # Delivers the box to the worker station
+    # Delivers the box to the workstation
     def run(self):
-        print('(Delivery)Dropping box to worker station')
-        print('(Delivery)Dropping box to worker station')
-    
+        print('(Delivery)Dropping box to workstation')
+
+        #TODO: WRITE CODE FOR MOVEMENT HERE!
+
+        print('(Delivery)Dropping box to workstation')
+        return None
+
     def opposite(self):
         return Pickup()
