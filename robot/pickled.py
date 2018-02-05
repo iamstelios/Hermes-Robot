@@ -4,20 +4,41 @@ import os
 
 """ Directory to store backup files in. """
 PICKLE_DIR = '/home/robot/.gherkins/'
-""" Variables prefixed with this string will be backed up. """
-PICKLE_VAR_PREFIX = 'pkl_'
+
+""" Variables prefixed with any of these strings will be backed up. """
+PICKLE_VAR_PREFIXES = ['pkl_', '_pkl_', '__pkl_']
 
 """
-Given a dictionary, returns all items in the dictionary that start with
-the prefix indicating they should be pickled.
+Returns True if the given variable name starts with one of the prefixes
+indicating that it should be pickled, False otherwise.
+"""
+def has_prefix(var):
+    for pre in PICKLE_VAR_PREFIXES:
+        if var.startswith(pre):
+            return True
+    return False
+
+"""
+Given a name starting with one of the picklable prefixes, returns the name
+without the prefix.
+"""
+def cut_prefix(var):
+    for pre in PICKLE_VAR_PREFIXES:
+        if pre.startswith(pre):
+            return var.lstrip(pre)
+    raise ValueError("Name does not start with a valid prefix.")
+
+"""
+Given a dictionary, returns all items in the dictionary the keys of which
+start with one of the prefixes indicating they should be pickled.
 """
 def vals_to_pickle(d):
-    return { k: v for k, v in d.items() if k.startswith(PICKLE_VAR_PREFIX) }
+    return ({ k: v for k, v in d.items() if has_prefix(k) })
 
 """
 Class decorator that automatically backs up values of variables prefixed
-with PICKLE_VAR_PREFIX to disk, as well as restores them on restart. Should
-be used with singletons, since all instances of the class share the same
+with one of PICKLE_VAR_PREFIXES to disk, as well as restores them on restart.
+Should be used with singletons, since all instances of the class share the same
 backup file.
 """
 def pickled(cls):
@@ -31,7 +52,7 @@ def pickled(cls):
 
             # Compute the list of members which should be backed up
             preserve = sorted(vals_to_pickle(self.__dict__))
-            preserve = map(lambda s: s[4:], preserve)
+            preserve = map(cut_prefix, preserve)
 
             # Find path to backup file
             path = PICKLE_DIR + cls.__name__ + '_' + '_'.join(preserve) + '.pkl'
@@ -58,7 +79,7 @@ def pickled(cls):
         """
         def __setattr__(self, name, value):
             super().__setattr__(name, value)
-            if self.__inited and name.startswith(PICKLE_VAR_PREFIX):
+            if self.__inited and has_prefix(name):
                 # Always write at the beginning to avoid having files with multiple
                 # copies of the dict stored
                 self.__backup_file.seek(0)

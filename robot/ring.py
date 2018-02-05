@@ -37,10 +37,10 @@ class RingBuf:
     def avg(self, n):
         if n < 1:
             raise ValueError("Must use at least one value.")
-
         avg = 0
         for i in range(0, n):
             avg += self.get(i)
+
         return avg / n
 
     """
@@ -49,11 +49,11 @@ class RingBuf:
     """
     def var(self, n):
         avg = self.avg(n)
-        
         var = 0
         for i in range(0, n):
             diff = self.get(i) - avg
             var += diff * diff
+
         return var / n
 
     """ Readable representation. """
