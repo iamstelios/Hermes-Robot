@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+#---------FOR PRESENTATION--------------
+from time import sleep
+wait_time = 4
+#---------------------------------------
+
 class SubInstruction(object):
     """ Abstract class """
     def run(self):
@@ -31,7 +36,7 @@ class Move(SubInstruction):
         print('Moving from %s to %s' % (self.nodeA.string, self.nodeB.string))
 
         #TODO: WRITE CODE FOR MOVEMENT HERE!
-
+        sleep(wait_time)
         print('Arrived at %s' % self.nodeB.string)
         return self.nodeB
     
@@ -51,7 +56,7 @@ class Reverse(SubInstruction):
         print('Reversing direction')
 
         #TODO: WRITE CODE FOR MOVEMENT HERE!
-        
+        sleep(wait_time)
         print('Direction reversed')
         return None
 
@@ -68,7 +73,7 @@ class BasePickUp(SubInstruction):
         print('Picking up box at level %d' % self.level)
 
         #TODO: WRITE CODE FOR MOVEMENT HERE!
-
+        sleep(wait_time)
         print('Picked up box at level %d' % self.level)
         return None
 
@@ -84,7 +89,7 @@ class BaseDrop(SubInstruction):
         print('Dropping box at level %d' % self.level)
 
         #TODO: WRITE CODE FOR MOVEMENT HERE!
-
+        sleep(wait_time)
         print('Dropped box at level %d' % self.level)
         return None
 
@@ -97,7 +102,7 @@ class WorkstationPickUp(SubInstruction):
         print('Picking up box from workstation')
 
         #TODO: WRITE CODE FOR MOVEMENT HERE!
-
+        sleep(wait_time)
         print('Picked up box from workstation')
         return None
 
@@ -110,7 +115,7 @@ class WorkstationDrop(SubInstruction):
         print('Dropping box to workstation')
 
         #TODO: WRITE CODE FOR MOVEMENT HERE!
-
+        sleep(wait_time)
         print('Dropped box to workstation')
         return None
 
