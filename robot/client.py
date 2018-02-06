@@ -52,24 +52,12 @@ junction_endpoints = [
 
 #=================== MAP END =========================
 
-#@asyncio.coroutine
-#def pos_update_cancel_check():
-    #send last_pos to server
-    #check if cancel was made
-
 def class_name(instance):
-    return instance.__class_.__name__
+    return instance.__class__.__name__
 
-#-------------------------INSTRUCTIONS----------------------------
-
-# All instructions executed with robot without holding a box 
-# and facing junction (all workstation connected to a junction!)
-
-def go(dst):
-    #Robot moves to the destination (faces away from junction and into the node!!)
-    print("Instruction: go(%s)" % dst)
-    pos = last_pos
-    destination = Position(dst)
+def pathCalculator(source, destination):
+    #Returns the queue of commands to traverse the path
+    pos = source
     # Queue of all the sub instruction instances to be executed
     subQueue = deque()
     # Loop iterates until the position travelled is the destination
@@ -82,29 +70,117 @@ def go(dst):
             new_pos = Position(endpoint_junction_connection[pos.number])
             subQueue.append(Move(pos,new_pos))
         pos = new_pos
+    return subQueue
+    
+
+#-------------------------INSTRUCTIONS----------------------------
+
+# All instructions executed with robot without holding a box 
+# and facing junction (all workstation connected to a junction!)
+
+def go(dst):
+    #Robot moves to the destination (faces away from junction and into the node!!)
+    print("Instruction: go(%s)" % dst)
+    destination = Position(dst)
+    if destination.isJunction :
+        return Exception("Go destination cannot be a junction")
+    subQueue = pathCalculator(last_pos, destination)
     
     cancelled = yield from queueProcessor(subQueue)
     return cancelled
-
+    
 def retrieve(level,src,dst):
     #Retrives the box from the source base to the destination workstation
     print("Instruction: retrieve(%s,%s,%s)" % (level,src,dst))
-    base_to_retrieve_from = Position(src)
-    if not last_pos.equals(base_to_retrieve_from):
-        cancelled = yield from go(src)
-        print(cancelled)
-    print("DO REST OF THE STUFF")
+    source = Position(src)
+    destination = Position(dst)
+    if not source.isBase :
+        return Exception("Retrieve source should be a base")
+    if not destination.isWorkstation :
+        return Exception("Retrieve destination should be a workstation")
     
-    
-    
+    # Queue of all the sub instruction instances to be executed
+    subQueue = deque()
+
+    if not last_pos.equals(source):
+        # Move to the source base if not there already
+        subQueue = pathCalculator(last_pos, source)
+    else:
+        # Face the base
+        subQueue.append(Reverse())
+
+    subQueue.append(BasePickUp(level))
+    subQueue.append(Reverse())
+    #Add path to workstation
+    subQueue.extend(pathCalculator(source, destination))
+
+    subQueue.append(WorkstationDrop())
+    subQueue.append(Reverse())
+
+    cancelled = yield from queueProcessor(subQueue)
+    return cancelled
 
 def store(level,src,dst):
     #Stores the box from the source workstation to the destination base
     print("Instruction: store(%s,%s,%s)" % (level,src,dst))
+    source = Position(src)
+    destination = Position(dst)
+    if not source.isWorkstation :
+        return Exception("Store source should be a workstation")
+    if not destination.isBase :
+        return Exception("Store destination should be a base")
+
+    # Queue of all the sub instruction instances to be executed
+    subQueue = deque()
+    
+    if not last_pos.equals(source):
+        # Move to the source workstation if not there already
+        subQueue = pathCalculator(last_pos, source)
+    else:
+        # Face the workstation
+        subQueue.append(Reverse())
+    
+    subQueue.append(WorkstationPickUp())
+    subQueue.append(Reverse())
+    # Add path to base
+    subQueue.extend(pathCalculator(source, destination))
+
+    subQueue.append(BaseDrop(level))
+    subQueue.append(Reverse())
+
+    cancelled = yield from queueProcessor(subQueue)
+    return cancelled
 
 def transfer(src,dst):
     #Transfer between two workstations
-    print("Instruction: transer(%s,%s)" % (src,dst))
+    print("Instruction: transfer(%s,%s)" % (src,dst))
+    source = Position(src)
+    destination = Position(dst)
+    if not source.isWorkstation :
+        return Exception("Transfer source should be a workstation")
+    if not destination.isWorkstation :
+        return Exception("Transfer destination should be a workstation")
+    
+    # Queue of all the sub instruction instances to be executed
+    subQueue = deque()
+
+    if not last_pos.equals(source):
+        # Move to the source workstation if not there already
+        subQueue = pathCalculator(last_pos, source)
+    else:
+        # Face the workstation
+        subQueue.append(Reverse())
+    
+    subQueue.append(WorkstationPickUp())
+    subQueue.append(Reverse())
+    # Add path to destination workstation
+    subQueue.extend(pathCalculator(source, destination))
+
+    subQueue.append(WorkstationDrop())
+    subQueue.append(Reverse())
+
+    cancelled = yield from queueProcessor(subQueue)
+    return cancelled
 
 #-------------------END OF INSTRUCTIONS----------------------------
 
@@ -114,6 +190,8 @@ def queueProcessor(queue):
     # Used in case of a cancelation
     reverseStack = list()
     cancelled = False
+
+    totalInstructions = len(queue)
     # Loop until instruction queue is empty
     while queue and not cancelled:
         # Dequeue sub instruction
@@ -125,22 +203,31 @@ def queueProcessor(queue):
         if position_change is not None:
             last_pos = position_change
         # poll server for cancellation
-        cancelled = (yield last_pos.string)
+        cancelled = (yield last_pos.string, totalInstructions, totalInstructions-len(queue))
 
     # if cancelled then run reverse stack and confirm to server
     firstMovement = True
+    totalInstructions = len(reverseStack)
     while cancelled and reverseStack:
         # Pop sub instruction
         subInstruction = reverseStack.pop()
-        if class_name(subInstruction == "Move") and firstMovement:
+        if class_name(subInstruction) == "Move" and firstMovement:
             #Reverse the robot to face the new path
             Reverse().run()
             firstMovement = False
+        # reverse function don't need to be executed except at the end
+        if class_name(subInstruction) == "Reverse":
+            #skip reversing
+            continue
         position_change = subInstruction.run()
         if position_change:
             last_pos = position_change
-        yield last_pos.string
-
+        #Send position to the server
+        yield last_pos.string, totalInstructions, totalInstructions-len(reverseStack)
+    
+    if cancelled:
+        #Reverse such that the robot faces the junction
+        Reverse().run()
     return cancelled
 
 
@@ -174,7 +261,7 @@ def action_caller(instruction):
         #Transfer is between two workstations
         src  = instruction["src"]
         dst = instruction["dst"]
-        transfer(src,dst)
+        yield from transfer(src,dst)
     elif action == 'update_map':
         pass
         #TODO: update_map()
@@ -201,14 +288,14 @@ def handler(ip):
             else:
                 instruction = json.loads(instruction_raw)
                 cancelled = False
-                #Generator that yield current position and is send the cancellation                print("DIAGNOSTICZZZ")
+                #Generator that yield current position and is send the cancellation
                 gen= action_caller(instruction)
                 #for new_position in gen:
-                new_position = next(gen)
+                new_position, totalInstructions, currentInstruction = next(gen)
                 while True:
                     try:
                         #TODO change to JSON format
-                        status = "Update Position: " + new_position
+                        status = "Update Position: " + new_position + " Queue progress: " + str(currentInstruction) + "/" + str(totalInstructions)
                         yield from websocket.send(status)
                         print("> {}".format(status))
 
@@ -222,9 +309,22 @@ def handler(ip):
                             cancel_instruction = json.loads(cancel_instruction_raw)
                             cancelled = cancel_instruction["cancelled"]
                         #Continue the operation                    
-                        new_position = gen.send(cancelled)
+                        new_position, totalInstructions, currentInstruction = gen.send(cancelled)
                     except StopIteration:
-                        break
+                        if not cancelled:
+                            break
+                        else:
+                            #Just keep updating position until cancelation complete
+                            try:
+                                #TODO change to JSON format
+                                status = "Update Position: " + new_position
+                                yield from websocket.send(status)
+                                print("> {}".format(status))
+
+                                #Continue the operation                    
+                                new_position, totalInstructions, currentInstruction = gen.send(cancelled)
+                            except StopIteration:
+                                break
                 # No need to send confirmation of instruction completed or cancelled
 
         except asyncio.TimeoutError:

@@ -21,26 +21,22 @@ const wss = new WebSocket.Server({
 
 const json1 = `{
   "action": "retrieve",
-  "level": "2",
+  "level": 2,
   "src": "0",
   "dst": "3"
 }`
 
 const json2 = `{
   "action": "store",
-  "position": {
-    "x": 1,
-    "y": 3
-  },
-  "id": 1,
-  "src": "Garry"
+  "level": 2,
+  "src": "3",
+  "dst": "0"
 }`
 
 const json3 = `{
   "action": "transfer",
-  "id": 244,
-  "src": "Chris",
-  "dst": "Beth"
+  "src": "2",
+  "dst": "1"
 }
 `
 const json4 = `{
@@ -60,12 +56,14 @@ const not_cancelled_json = `{
 var update_position = new RegExp("Update Position: ");
 
 var queue = [];
-//queue.push(json1);
-//queue.push(json2);
-//queue.push(json3);
-queue.push(json4);
 queue.push(json1);
+queue.push(json2);
+queue.push(json3);
+queue.push(json4);
+//queue.push(json1);
 queue.push("close");
+
+i = 0;
 
 wss.on('connection', function connection(ws) {
   ws.on('message', function incoming(message) {
@@ -81,8 +79,15 @@ wss.on('connection', function connection(ws) {
       
     }else if(message === "Check Cancellation"){
       //TODO: If cancel check -- reply -- also update location
-      ws.send(not_cancelled_json);
-      console.log('send: %s', not_cancelled_json);
+      i++;
+      if(i%6==0){
+        ws.send(cancelled_json);
+        console.log('send: %s', cancelled_json);
+      }else{
+        ws.send(not_cancelled_json);
+        console.log('send: %s', not_cancelled_json);
+      }
+      
     }else if(update_position.test(message)){
       //DO STUFF
       console.log('position update');

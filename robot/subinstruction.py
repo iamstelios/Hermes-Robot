@@ -10,8 +10,8 @@ class SubInstruction(object):
 class Move(SubInstruction):
     # Move robot from node A to node B 
     # Nodes can be either workstations or junctions or the base
-    # Robot should be facing the right direction when starting this
-    # instruction (node A -> Node B)
+    # Robot will be facing the right direction when starting this
+    # instruction (Node A -> Node B)
 
     # If node B is a junction, the robot should stop before entering the juction
     # Thus if the opposite is needed no exit input is needed to reach back node A.
@@ -59,7 +59,7 @@ class Reverse(SubInstruction):
         return Reverse()
 
 
-class Pick(SubInstruction):
+class BasePickUp(SubInstruction):
     # Picks up item at shelf level
     def __init__(self, level):
         self.level = level
@@ -73,9 +73,9 @@ class Pick(SubInstruction):
         return None
 
     def opposite(self):
-        return Drop(self.level)
+        return BaseDrop(self.level)
 
-class Drop(SubInstruction):
+class BaseDrop(SubInstruction):
     # Drops item at shelf position
     def __init__(self, level):
         self.level = level
@@ -89,9 +89,9 @@ class Drop(SubInstruction):
         return None
 
     def opposite(self):
-        return Pick(self.level)
+        return BasePickUp(self.level)
 
-class Pickup(SubInstruction):
+class WorkstationPickUp(SubInstruction):
     # Takes the box from the workstation
     def run(self):
         print('Picking up box from workstation')
@@ -102,17 +102,17 @@ class Pickup(SubInstruction):
         return None
 
     def opposite(self):
-        return Delivery()
+        return WorkstationDrop()
 
-class Delivery(SubInstruction):
+class WorkstationDrop(SubInstruction):
     # Delivers the box to the workstation
     def run(self):
-        print('(Delivery)Dropping box to workstation')
+        print('Dropping box to workstation')
 
         #TODO: WRITE CODE FOR MOVEMENT HERE!
 
-        print('(Delivery)Dropping box to workstation')
+        print('Dropped box to workstation')
         return None
 
     def opposite(self):
-        return Pickup()
+        return WorkstationPickUp()
