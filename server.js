@@ -38,7 +38,7 @@ var statusRouter = express.Router();
 var inventoryRouter = express.Router();
 
 function lookupRobot(req, res, next) {
-  const robotIndex = storage.getItemSync("robots").findIndex(robot => robot.id == req.params.id;
+  const robotIndex = storage.getItemSync("robots").findIndex(robot => robot.id == req.params.id);
   if (robotIndex == -1) {
     res.statusCode = 404;
     return res.json({errors: ["Robot not found"]});
@@ -111,6 +111,7 @@ inventoryRouter.delete('/:id', lookupItem, function(req, res) {
     return val;
   });
   res.statusCode = 204;
+  res.send();
 });
 app.use('/api/inventory', inventoryRouter);
 
