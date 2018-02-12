@@ -85,9 +85,9 @@ inventoryRouter.put('/', function(req, res) {
 inventoryRouter.post('/', function(req, res) {
   var id = mutate("lastInvId", val => val + 1);
   var item = req.body;
-  item.id = id;
+  item.code = id;
   var inventory = mutate("inventory", val => {
-    val.push(request);
+    val.push(item);
     return val;
   });
   console.log(inventory);
@@ -98,7 +98,7 @@ inventoryRouter.get('/:id', lookupItem, function(req, res) {
 });
 inventoryRouter.put('/:id', lookupItem, function(req, res) {
   var item = req.body;
-  item.id = req.params.id;
+  item.code = req.params.id;
   var inventory = mutate("inventory", val => {
     val[req.itemIndex] = item;
     return val;
