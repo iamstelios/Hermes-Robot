@@ -230,16 +230,6 @@ def queueProcessor(queue):
         Reverse().run()
     return cancelled
 
-
-#TODO: delete
-# action = {"go": go,
-#             "retrieve": retrieve,
-#             "store": store,
-#             "transfer": transfer,
-#             "cancel": cancel,
-#             "update_map": update_map
-#             }
-
 def action_caller(instruction):
     action = instruction["action"]
     if action == "go":
@@ -276,8 +266,10 @@ def handler(ip):
         return
     while True:
         try:
-            status = "Requesting new instruction"
-            yield from websocket.send(status)
+            status = {
+                "status" : "Requesting new instruction"
+            }
+            yield from websocket.send(json.dumps(status))
             print("> {}".format(status))
 
             instruction_raw = yield from websocket.recv()
@@ -294,14 +286,19 @@ def handler(ip):
                 new_position, totalInstructions, currentInstruction = next(gen)
                 while True:
                     try:
-                        #TODO change to JSON format
-                        status = "Update Position: " + new_position + " Queue progress: " + str(currentInstruction) + "/" + str(totalInstructions)
-                        yield from websocket.send(status)
+                        status = {
+                            "status" : "Position and queue progress update",
+                            "position" : new_position, #String
+                            "progress" : [currentInstruction,totalInstructions] #Integers
+                        }
+                        yield from websocket.send(json.dumps(status))
                         print("> {}".format(status))
 
                         if not cancelled:
-                            status = "Check Cancellation"
-                            yield from websocket.send(status)
+                            status = {
+                                "status" : "Check Cancellation"
+                            }
+                            yield from websocket.send(json.dumps(status))
                             print("> {}".format(status))
                             
                             cancel_instruction_raw = yield from websocket.recv()
@@ -311,14 +308,17 @@ def handler(ip):
                         #Continue the operation                    
                         new_position, totalInstructions, currentInstruction = gen.send(cancelled)
                     except StopIteration:
+                        #TODO: Check if this can be removed
                         if not cancelled:
                             break
                         else:
                             #Just keep updating position until cancelation complete
                             try:
-                                #TODO change to JSON format
-                                status = "Update Position: " + new_position
-                                yield from websocket.send(status)
+                                status = {
+                                    "status" : "Position update",
+                                    "position" : new_position #String
+                                }
+                                yield from websocket.send(json.dumps(status))
                                 print("> {}".format(status))
 
                                 #Continue the operation                    
