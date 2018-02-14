@@ -71,7 +71,6 @@ def pathCalculator(source, destination):
             subQueue.append(Move(pos,new_pos))
         pos = new_pos
     return subQueue
-    
 
 #-------------------------INSTRUCTIONS----------------------------
 
@@ -101,10 +100,13 @@ def retrieve(level,src,dst):
     
     # Queue of all the sub instruction instances to be executed
     subQueue = deque()
-
+    # Used for the instructions move the robot to the source
+    # Because this way it doesn't need to go back to original 
+    # place without moving something
+    uncancellableQueue = deque()
     if not last_pos.equals(source):
         # Move to the source base if not there already
-        subQueue = pathCalculator(last_pos, source)
+        uncancellableQueue = pathCalculator(last_pos, source)
     else:
         # Face the base
         subQueue.append(Reverse())
@@ -117,7 +119,7 @@ def retrieve(level,src,dst):
     subQueue.append(WorkstationDrop())
     subQueue.append(Reverse())
 
-    cancelled = yield from queueProcessor(subQueue)
+    cancelled = yield from queueProcessor(subQueue,uncancellableQueue)
     return cancelled
 
 def store(level,src,dst):
@@ -132,10 +134,10 @@ def store(level,src,dst):
 
     # Queue of all the sub instruction instances to be executed
     subQueue = deque()
-    
+    uncancellableQueue = deque()
     if not last_pos.equals(source):
         # Move to the source workstation if not there already
-        subQueue = pathCalculator(last_pos, source)
+        uncancellableQueue = pathCalculator(last_pos, source)
     else:
         # Face the workstation
         subQueue.append(Reverse())
@@ -148,7 +150,7 @@ def store(level,src,dst):
     subQueue.append(BaseDrop(level))
     subQueue.append(Reverse())
 
-    cancelled = yield from queueProcessor(subQueue)
+    cancelled = yield from queueProcessor(subQueue,uncancellableQueue)
     return cancelled
 
 def transfer(src,dst):
@@ -163,10 +165,10 @@ def transfer(src,dst):
     
     # Queue of all the sub instruction instances to be executed
     subQueue = deque()
-
+    uncancellableQueue = deque()
     if not last_pos.equals(source):
         # Move to the source workstation if not there already
-        subQueue = pathCalculator(last_pos, source)
+        uncancellableQueue = pathCalculator(last_pos, source)
     else:
         # Face the workstation
         subQueue.append(Reverse())
@@ -179,19 +181,31 @@ def transfer(src,dst):
     subQueue.append(WorkstationDrop())
     subQueue.append(Reverse())
 
-    cancelled = yield from queueProcessor(subQueue)
+    cancelled = yield from queueProcessor(subQueue,uncancellableQueue)
     return cancelled
 
 #-------------------END OF INSTRUCTIONS----------------------------
 
-def queueProcessor(queue):
+def queueProcessor(queue, uncancellableQueue = deque()):
     # Excecutes the queue of sub instructions and handles cancelations
     global last_pos
     # Used in case of a cancelation
     reverseStack = list()
     cancelled = False
 
-    totalInstructions = len(queue)
+    totalInstructions = len(queue)+len(uncancellableQueue)
+
+    #Uncancellable queue (used for moving to the source)
+    while uncancellableQueue:
+        # Dequeue sub instruction
+        subInstruction = uncancellableQueue.popleft()
+        # Run instruction dequeued
+        position_change = subInstruction.run()
+        if position_change is not None:
+            last_pos = position_change
+        # poll server for cancellation and update position
+        cancelled = (yield last_pos.string, totalInstructions, totalInstructions-len(queue)-len(uncancellableQueue))
+
     # Loop until instruction queue is empty
     while queue and not cancelled:
         # Dequeue sub instruction
@@ -203,7 +217,7 @@ def queueProcessor(queue):
         if position_change is not None:
             last_pos = position_change
         # poll server for cancellation
-        cancelled = (yield last_pos.string, totalInstructions, totalInstructions-len(queue))
+        cancelled = (yield last_pos.string, totalInstructions, totalInstructions-len(queue)-len(uncancellableQueue))
 
     # if cancelled then run reverse stack and confirm to server
     firstMovement = True
@@ -212,12 +226,14 @@ def queueProcessor(queue):
         # Pop sub instruction
         subInstruction = reverseStack.pop()
         if class_name(subInstruction) == "Move" and firstMovement:
-            #Reverse the robot to face the new path
+            # Reverse the robot to face the new path
             Reverse().run()
             firstMovement = False
         # reverse function don't need to be executed except at the end
         if class_name(subInstruction) == "Reverse":
-            #skip reversing
+            # skip reversing
+            # yield for the sake of updating progress
+            yield last_pos.string, totalInstructions, totalInstructions-len(reverseStack)
             continue
         position_change = subInstruction.run()
         if position_change:
