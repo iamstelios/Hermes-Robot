@@ -38,15 +38,19 @@ storeIfNotStored("lastReqId", 0);
 storeIfNotStored("inventory", []);
 // Last inventory Id
 storeIfNotStored("lastInvId", 0);
-storeIfNotStored("robots", []);
+
+// I suggest using an array instead of storage
+// because robots are going to be identified as 
+// different each time they reconnect
+//storeIfNotStored("robots", []);
 // Last robot id
-storeIfNotStored("lastRobId", 0);
+//storeIfNotStored("lastRobId", 0);
 
 // Parse the jason file using the body-parser middleware
 app.use(bodyParser.json());
 
+// ============= ROBOT STATUSES ========================
 // Modular route handler for route /api/status
-
 var statusRouter = express.Router();
 statusRouter.get('/', function(req, res) {});
 statusRouter.post('/', function(req, res) {
@@ -64,7 +68,9 @@ statusRouter.get('/:id', lookupRobot, function(req, res) {});
 statusRouter.patch('/:id', lookupRobot, function(req, res) {});
 statusRouter.delete('/:id', lookupRobot, function(req, res) {});
 app.use('/api/status', statusRouter);
+// ===================================================
 
+// ============ INVENTORY ============================
 // Modular route handler for route /api/inventory
 // Manipulates the inventory of the items
 var inventoryRouter = express.Router();
@@ -120,6 +126,8 @@ inventoryRouter.delete('/:id', lookupItem, function(req, res) {
 // Connect the inventoryRouter to the app
 app.use('/api/inventory', inventoryRouter);
 
+// ===================================================
+
 // Finds the Index of the robot using its id
 function lookupRobot(req, res, next) {
   const robotIndex = storage.getItemSync("robots").findIndex(robot => robot.id == req.params.id);
@@ -142,23 +150,185 @@ function lookupItem(req, res, next) {
   next();
 }
 
-// Return all the request made so far
-app.get('/api/requests/', (req, res) => {
+// Finds the Index of the item in the inventory from its id
+function lookupRequest(req, res, next) {
+  const requestIndex = storage.getItemSync("requests").findIndex(request => request.id == req.params.id);
+  if (requestIndex == -1) {
+    res.statusCode = 404;
+    return res.json({errors: ["Request not found"]});
+  }
+  req.requestIndex = requestIndex;
+  next();
+}
+// ================= REQUESTS =======================
+
+var requestRouter = express.Router();
+// Queue of active requests
+activeRequests = [];
+
+// Return all the requests made so far
+requestRouter.get('/', (req, res) => {
   res.send(storage.getItemSync("requests"));
 });
 
 // Add another request
-app.post('/api/requests/', function(req, res) {
+requestRouter.post('/', function(req, res) {
   var id = mutate("lastReqId", val => val + 1);
   var request = req.body;
   request.id = id;
+  if(idleRobotIds.length>0){
+    // Assign the instruction to the first robot available
+    var robotId = idleRobotIds.shift();
+    index =  robots.findIndex(ws => ws.robotId == robotId);
+    robots[index].processRequestId = request.id;
+    robots[index].send(JSON.stringify(request));
+    processingRequests.push({"id":request.id})
+  }else{
+    // No robot available -> add to queue
+    activeRequests.push(request) // Doesn't need completed option
+  }
+  request.completed = "no" // Should have values "no", "yes" , "cancelled"
   var requests = mutate("requests", val => {
     val.push(request);
     return val;
   });
-  console.log(requests);
   res.send(request);
 });
 
+// Cancel request if not completed
+requestRouter.delete('/:id', lookupRequest, function(req, res) {
+  mutate("requests", val => {
+    if (val[req.requestIndex].completed === "no"){
+      // Need to change completed to cancelled
+      val[req.requestIndex].completed = "cancelled";
+      // Remove from active queue
+      index = activeRequests.findIndex(request => request.id == req.params.id)
+      if (index > -1){
+        activeRequests.splice(index,1);
+        console.log("Cancelled request removed from active queue")
+      }else{
+        console.log("Cancelled request is being executed now")
+      }
+    }
+    return val;
+  });
+  res.send();
+});
+
+// Connect the requestRouter to the app
+app.use('/api/requests', requestRouter);
+// =================================================
+
 // Start listening
 app.listen(port, () => console.log(`Listening on port ${port}`));
+
+
+//------------------ Robot server Connection -----------------------
+
+const WebSocket = require('ws');
+// Holds all the robots websockets
+robots=[]
+
+const wss = new WebSocket.Server({port: 8000});
+
+// Indexes of the robots that are not processing an instruction
+idleRobotIds = [];
+// Used for assigning id
+nextRobotId = 0;
+// List of request that are currently being processed
+// Used for position and queue progress updates
+processingRequests = [];
+
+// Set a request as completed
+function setComplete(requestId){
+  if (requestId < 0){
+    // First request
+    return;
+  }
+  // Changes completed property in request history
+  const requestIndex = storage.getItemSync("requests").findIndex(request => request.id == requestId);
+  mutate("requests",val => {
+    if(val[requestIndex].completed != "cancelled"){
+      val[requestIndex].completed = "completed";
+    }
+    return val;
+  });
+
+  // Removes the request from the processingRequests list
+  var index = processingRequests.findIndex(request => request.id = requestId);
+  processingRequests.splice(index,1)
+}
+
+//Returns true if request cancelled
+function checkCancelled(requestId){
+  var requests = storage.getItemSync("requests")
+  const requestIndex = requests.findIndex(request => request.id == requestId);
+  return requests[requestIndex].completed === "cancelled";
+}
+
+const cancelled_json = `{
+  "cancelled": true
+}
+`
+const not_cancelled_json = `{
+  "cancelled": false
+}
+`
+
+// POTENTIAL RACE CONDITIONS WHEN MODIFYING processingRequests!
+wss.on('connection', function connection(ws) {
+  console.log("New robot connected!")
+  // Each robot connected gets a unique id
+  ws.robotId = nextRobotId;
+  nextRobotId++;
+  robots.push(ws);
+  ws.processRequestId = -1
+  ws.on('message', function incoming(message) {
+    console.log('received: %s', message);
+    command = JSON.parse(message);
+    if (command.status === "Requesting new instruction") {
+      setComplete(ws.processRequestId);
+      
+      if (activeRequests.length > 0) {
+        var instruction = activeRequests.shift();
+        ws.send(JSON.stringify(instruction));
+        console.log('send: %s', instruction);
+        //Save the id for later use
+        ws.processRequestId = instruction.id;
+        //Add the request to the processing list
+        processingRequests.push({"id":ws.processRequestId})
+      } else {
+        // No instruction in the queue thus add to iddle list
+        idleRobotIds.push(ws.robotId)
+        console.log(`Robot with id: ${ws.robotId} added to the idle list`)
+      }
+
+    } else if (command.status === "Check Cancellation") {
+      if(checkCancelled(ws.processRequestId)){
+        ws.send(cancelled_json);
+        console.log('send: %s', cancelled_json);
+      }else{
+        ws.send(not_cancelled_json);
+        console.log('send: %s', not_cancelled_json);
+      }
+
+    } else if (command.status === "Position and queue progress update") {
+      var index = processingRequests.findIndex(request => request.id = ws.processRequestId);
+      processingRequests[index].position = command.position // String
+      processingRequests[index].progress = command.progress // [currentInstruction,totalInstructions] #Integers
+      console.log(`Position:${processingRequests[index].position} , Queue progress: ${processingRequests[index].progress}`);
+    } else if (command.status === "Position update"){
+      var index = processingRequests.findIndex(request => request.id = ws.processRequestId);
+      processingRequests[index].position = command.position // String
+      console.log(`Position:${processingRequests[index].position}`);
+    }
+
+  });
+  ws.on('close', function close() {
+    // Remove robot id from idle (if in idle)
+    index = idleRobotIds.findIndex(id => id == ws.robotId);
+    idleRobotIds.splice(index,1);
+    console.log('Robot %d disconnected', ws.robotId);
+  });
+
+});
