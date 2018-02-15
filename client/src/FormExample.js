@@ -1,12 +1,6 @@
 import React, {Component} from 'react'
 import {withAlert} from 'react-alert'
-import {
-  FormGroup,
-  FormControl,
-  ControlLabel,
-  HelpBlock,
-  Button
-} from 'react-bootstrap'
+import {FormGroup, FormControl, ControlLabel, HelpBlock, Button} from 'react-bootstrap'
 import {lastId, incrementLastId, requests, items} from './Globals'
 
 class ResultPreview extends Component {
@@ -54,12 +48,7 @@ class FormExample extends React.Component {
   handleSubmit(e) {
     if (this.getValidationState() === 'success') {
       const id = incrementLastId();
-      requests.push({
-        id: id,
-        action: 'retrieve',
-        item: this.getItem(),
-        destination: 'garry'
-      });
+      requests.push({id: id, action: 'retrieve', item: this.getItem(), destination: 'garry'});
       this.props.alert.success(`Request #${id} submitted`);
       console.log(requests);
     }

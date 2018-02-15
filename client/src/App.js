@@ -37,8 +37,6 @@ class RequestList extends Component {
   }
 }
 
-
-
 class RequestPane extends Component {
   constructor(props, context) {
     super(props);
