@@ -96,7 +96,7 @@ inventoryRouter.post('/', function(req, res) {
     val.push(item);
     return val;
   });
-  console.log("Item: "+ item.name + " added to the inventory.");
+  console.log("Item: " + item.name + " added to the inventory.");
   res.send(item);
 });
 // Send back the item with the specific id
@@ -111,7 +111,7 @@ inventoryRouter.put('/:id', lookupItem, function(req, res) {
     val[req.itemIndex] = item;
     return val;
   });
-  console.log("Item id: "+ item.code + " updated in the inventory.");
+  console.log("Item id: " + item.code + " updated in the inventory.");
   res.send(item)
 });
 // Delete item with given id
@@ -121,7 +121,7 @@ inventoryRouter.delete('/:id', lookupItem, function(req, res) {
     return val;
   });
   res.statusCode = 204;
-  console.log("Item id: "+ item.code + " deleted from the inventory.");
+  console.log("Item id: " + item.code + " deleted from the inventory.");
   res.send();
 });
 // Connect the inventoryRouter to the app
@@ -165,7 +165,7 @@ function lookupRequest(req, res, next) {
 
 var requestRouter = express.Router();
 // Queue of active requests
-activeRequests = [];
+var activeRequests = [];
 
 // Return all the requests made so far
 requestRouter.get('/', (req, res) => {
@@ -177,14 +177,14 @@ requestRouter.post('/', function(req, res) {
   var id = mutate("lastReqId", val => val + 1);
   var request = req.body;
   request.id = id;
-  if(idleRobotIds.length>0){
+  if (idleRobotIds.length > 0) {
     // Assign the instruction to the first robot available
     var robotId = idleRobotIds.shift();
-    index =  robots.findIndex(ws => ws.robotId == robotId);
+    index = robots.findIndex(ws => ws.robotId == robotId);
     robots[index].processRequestId = request.id;
     robots[index].send(JSON.stringify(request));
-    processingRequests.push({"id":request.id})
-  }else{
+    processingRequests.push({"id": request.id})
+  } else {
     // No robot available -> add to queue
     activeRequests.push(request) // Doesn't need completed option
   }
@@ -199,15 +199,15 @@ requestRouter.post('/', function(req, res) {
 // Cancel request if not completed
 requestRouter.delete('/:id', lookupRequest, function(req, res) {
   mutate("requests", val => {
-    if (val[req.requestIndex].completed === "no"){
+    if (val[req.requestIndex].completed === "no") {
       // Need to change completed to cancelled
       val[req.requestIndex].completed = "cancelled";
       // Remove from active queue
       index = activeRequests.findIndex(request => request.id == req.params.id)
-      if (index > -1){
-        activeRequests.splice(index,1);
+      if (index > -1) {
+        activeRequests.splice(index, 1);
         console.log("Cancelled request removed from active queue")
-      }else{
+      } else {
         console.log("Cancelled request is being executed now")
       }
     }
@@ -223,12 +223,11 @@ app.use('/api/requests', requestRouter);
 // Start listening
 app.listen(port, () => console.log(`Listening on port ${port}`));
 
-
 //------------------ Robot server Connection -----------------------
 
 const WebSocket = require('ws');
 // Holds all the robots websockets
-robots=[]
+robots = []
 
 const wss = new WebSocket.Server({port: 8000});
 
@@ -241,15 +240,15 @@ nextRobotId = 0;
 processingRequests = [];
 
 // Set a request as completed
-function setComplete(requestId){
-  if (requestId < 0){
+function setComplete(requestId) {
+  if (requestId < 0) {
     // First request
     return;
   }
   // Changes completed property in request history
   const requestIndex = storage.getItemSync("requests").findIndex(request => request.id == requestId);
-  mutate("requests",val => {
-    if(val[requestIndex].completed != "cancelled"){
+  mutate("requests", val => {
+    if (val[requestIndex].completed != "cancelled") {
       val[requestIndex].completed = "completed";
     }
     return val;
@@ -257,11 +256,11 @@ function setComplete(requestId){
 
   // Removes the request from the processingRequests list
   var index = processingRequests.findIndex(request => request.id = requestId);
-  processingRequests.splice(index,1)
+  processingRequests.splice(index, 1)
 }
 
 //Returns true if request cancelled
-function checkCancelled(requestId){
+function checkCancelled(requestId) {
   var requests = storage.getItemSync("requests")
   const requestIndex = requests.findIndex(request => request.id == requestId);
   return requests[requestIndex].completed === "cancelled";
@@ -297,7 +296,7 @@ wss.on('connection', function connection(ws) {
         //Save the id for later use
         ws.processRequestId = instruction.id;
         //Add the request to the processing list
-        processingRequests.push({"id":ws.processRequestId})
+        processingRequests.push({"id": ws.processRequestId})
       } else {
         // No instruction in the queue thus add to iddle list
         idleRobotIds.push(ws.robotId)
@@ -305,10 +304,10 @@ wss.on('connection', function connection(ws) {
       }
 
     } else if (command.status === "Check Cancellation") {
-      if(checkCancelled(ws.processRequestId)){
+      if (checkCancelled(ws.processRequestId)) {
         ws.send(cancelled_json);
         console.log('send: %s', cancelled_json);
-      }else{
+      } else {
         ws.send(not_cancelled_json);
         console.log('send: %s', not_cancelled_json);
       }
@@ -318,7 +317,7 @@ wss.on('connection', function connection(ws) {
       processingRequests[index].position = command.position // String
       processingRequests[index].progress = command.progress // [currentInstruction,totalInstructions] #Integers
       console.log(`Position:${processingRequests[index].position} , Queue progress: ${processingRequests[index].progress}`);
-    } else if (command.status === "Position update"){
+    } else if (command.status === "Position update") {
       var index = processingRequests.findIndex(request => request.id = ws.processRequestId);
       processingRequests[index].position = command.position // String
       console.log(`Position:${processingRequests[index].position}`);
@@ -328,7 +327,7 @@ wss.on('connection', function connection(ws) {
   ws.on('close', function close() {
     // Remove robot id from idle (if in idle)
     index = idleRobotIds.findIndex(id => id == ws.robotId);
-    idleRobotIds.splice(index,1);
+    idleRobotIds.splice(index, 1);
     console.log('Robot %d disconnected', ws.robotId);
   });
 
