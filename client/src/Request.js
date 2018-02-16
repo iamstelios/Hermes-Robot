@@ -36,11 +36,10 @@ class Request extends Component {
   }
   render() {
     if (this.state.completion === this.props.steps) {
-      requests.pop();
       this.props.alert.success(`Request #${this.props.request.id} Complete`);
     }
     const now = this.state.completion / this.props.steps * 100;
-    const message = `Retrieving ${this.props.request.item.name} (${this.props.request.item.code})`;
+    const message = `Retrieving item ${this.props.request.itemCode}`; //`Retrieving ${this.props.request.item.name} (${this.props.request.item.code})`;
     return (<Panel>
       <Panel.Heading>
         <Panel.Title componentClass="h3">{this.props.title}&nbsp;(#{this.props.request.id})

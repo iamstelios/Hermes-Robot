@@ -220,6 +220,22 @@ requestRouter.delete('/:id', lookupRequest, function(req, res) {
 app.use('/api/requests', requestRouter);
 // =================================================
 
+app.get('/api/users/:userId/requests/', function(req, res) {
+  const requests = storage.getItemSync("requests").filter(function(request) {
+    switch (request.action) {
+      case "retrieve":
+        return request.dst == req.params.userId;
+      case "store":
+        return request.src == req.params.userId;
+      case "send":
+        return request.src == req.params.userId;
+      default:
+        return false;
+    }
+  });
+  res.send(requests)
+});
+
 // Start listening
 app.listen(port, () => console.log(`Listening on port ${port}`));
 
