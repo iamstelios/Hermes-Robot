@@ -357,8 +357,11 @@ def handler(ip):
 
 def main():
 
-    #Default ip address
-    ip = "192.168.137.1"
+    # Default ip address
+    # for windows
+    # ip = "192.168.137.1"
+    # localhost
+    ip = "127.0.0.1"
     if(len(sys.argv)>1):
         ip=sys.argv[1]
         #Check if the arguement given is a well defined ip address
