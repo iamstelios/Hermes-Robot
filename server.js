@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const storage = require('node-persist');
+
 const app = express();
 
 const port = process.env.PORT || 8080;
@@ -32,7 +33,7 @@ function mutate(key, mutation) {
 // Initialization
 // Active requests
 storeIfNotStored("requests", []);
-// Last request Id 
+// Last request Id
 // Used for calculating the next request id
 storeIfNotStored("lastReqId", 0);
 storeIfNotStored("inventory", []);
@@ -40,7 +41,7 @@ storeIfNotStored("inventory", []);
 storeIfNotStored("lastInvId", 0);
 
 // I suggest using an array instead of storage
-// because robots are going to be identified as 
+// because robots are going to be identified as
 // different each time they reconnect
 //storeIfNotStored("robots", []);
 // Last robot id
@@ -311,7 +312,7 @@ wss.on('connection', function connection(ws) {
     command = JSON.parse(message);
     if (command.status === "Requesting new instruction") {
       setComplete(ws.processRequestId);
-      
+
       if (activeRequests.length > 0) {
         var instruction = activeRequests.shift();
         ws.send(JSON.stringify(instruction));
