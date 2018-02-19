@@ -177,6 +177,20 @@ requestRouter.post('/', function(req, res) {
   var id = mutate("lastReqId", val => val + 1);
   var request = req.body;
   request.id = id;
+  request.completed = "no" // Should have values "no", "yes" , "cancelled"
+  switch (request.action) {
+    case "retrieve":
+      request.title = `Retrieve ${request.item.name} from store ${request.item.location.store}`;
+
+      break;
+    default:
+  }
+  request.status = "unassigned";
+  request.completion = 0;
+  request.steps = -1;
+  console.log(request);
+  // {id, item, title, status, completion, steps}
+
   if (idleRobotIds.length > 0) {
     // Assign the instruction to the first robot available
     var robotId = idleRobotIds.shift();
@@ -188,7 +202,6 @@ requestRouter.post('/', function(req, res) {
     // No robot available -> add to queue
     activeRequests.push(request) // Doesn't need completed option
   }
-  request.completed = "no" // Should have values "no", "yes" , "cancelled"
   var requests = mutate("requests", val => {
     val.push(request);
     return val;
