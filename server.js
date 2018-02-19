@@ -259,7 +259,7 @@ const WebSocket = require('ws');
 // Holds all the robots websockets
 robots = []
 
-const wss = new WebSocket.Server({port: 8000});
+const wss = new WebSocket.Server({port: 9000});
 
 // Indexes of the robots that are not processing an instruction
 idleRobotIds = [];
