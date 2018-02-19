@@ -7,6 +7,7 @@ class RequestList extends Component {
     const prevListIds = prevProps.list.map(req => req.id);
     const removedIds = prevListIds.filter(n => curListIds.indexOf(n) === -1);
     for (var id in removedIds) {
+      console.log(`Fetching data for id: ${id}`);
       if (removedIds.hasOwnProperty(id)) {
         fetch(`/api/requests/${id}`).then(results => results.json()).then(data => {
           console.log(data);

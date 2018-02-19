@@ -181,7 +181,6 @@ requestRouter.post('/', function(req, res) {
   switch (request.action) {
     case "retrieve":
       request.title = `Retrieve ${request.item.name} from store ${request.item.location.store}`;
-
       break;
     default:
   }

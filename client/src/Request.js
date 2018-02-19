@@ -22,13 +22,12 @@ class Request extends Component {
     } = this.props.request;
     var assigned = true;
     const now = completion / steps * 100;
-    console.log(now);
     if (steps < 1) {
       assigned = false;
     } else if (completion === steps) {
       this.props.alert.success(`Request #${id} Complete`);
     }
-    const message = `Retrieving ${item.name} (${item.code})`;
+    const message = `${item.name} (code: ${item.code})`;
     var panelClass = assigned
       ? ''
       : 'unassigned-request';
