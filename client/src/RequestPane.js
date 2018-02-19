@@ -31,7 +31,7 @@ class RequestPane extends Component {
 
 export default connect(props => ({
   requestsFetch: {
-    url: `/api/users/${props.userId}/requests/`,
+    url: `/api/users/${props.userId}/requests?completed=no`,
     refreshInterval: 2000
   }
 }))(RequestPane)
