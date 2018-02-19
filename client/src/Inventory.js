@@ -39,7 +39,6 @@ class Inventory extends Component {
     e.preventDefault();
   }
   render() {
-    console.log("RENDER");
     const listItems = this.state.items.map((item) => {
       return (<li key={item.code}>
         <Panel bsStyle="primary">
