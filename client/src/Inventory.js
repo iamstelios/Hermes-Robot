@@ -27,10 +27,15 @@ class Inventory extends Component {
     };
   }
   handleSubmit(item, e) {
-    const id = incrementLastId();
-    requests.push({id: id, action: 'retrieve', item: item, destination: 'garry'});
-    this.props.alert.success(`Request #${id} submitted`);
-    console.log(requests);
+    fetch('/api/requests/', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({action: 'retrieve', item: item, dst: '1'})
+    })
+    this.props.alert.success(`Request #${item.id} submitted`);
     e.preventDefault();
   }
   render() {
@@ -53,6 +58,5 @@ class Inventory extends Component {
     </ul>)
   }
 }
-
 
 export default withAlert(Inventory);
