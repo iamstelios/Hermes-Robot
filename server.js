@@ -49,10 +49,31 @@ storeIfNotStored("lastInvId", 0);
 // Parse the jason file using the body-parser middleware
 app.use(bodyParser.json());
 
-// ============= ROBOT STATUSES ========================
+// ============= STATUSES ========================
 // Modular route handler for route /api/status
 var statusRouter = express.Router();
-statusRouter.get('/', function(req, res) {});
+// Send all the currently processed requests
+statusRouter.get('/processingRequests', function(req, res) {
+  res.send(processingRequests);
+});
+// Send the ids of the robots that are idle
+statusRouter.get('/idleRobotIds', function(req, res) {
+  res.send(idleRobotIds);
+});
+// Send back the process progress of the request queried
+statusRouter.get('/:id', function(req, res) {
+  var requestId = req.params.id;
+  var index = processingRequests.findIndex(request => request.id == requestId);
+  if(index>=0){
+    res.send(processingRequests[index]);
+  }else{
+    res.send('not processing')
+  }
+  
+});
+
+//TODO: ASK ALEX IF NEEDED
+/* 
 statusRouter.post('/', function(req, res) {
   var id = mutate("lastInvId", val => val + 1);
   var item = req.body;
@@ -67,7 +88,9 @@ statusRouter.post('/', function(req, res) {
 statusRouter.get('/:id', lookupRobot, function(req, res) {});
 statusRouter.patch('/:id', lookupRobot, function(req, res) {});
 statusRouter.delete('/:id', lookupRobot, function(req, res) {});
+*/
 app.use('/api/status', statusRouter);
+
 // ===================================================
 
 // ============ INVENTORY ============================
@@ -182,7 +205,7 @@ requestRouter.post('/', function(req, res) {
     index =  robots.findIndex(ws => ws.robotId == robotId);
     robots[index].processRequestId = request.id;
     robots[index].send(JSON.stringify(request));
-    processingRequests.push({"id":request.id})
+    processingRequests.push({"id":robots[index].processRequestId, "robotId":robots[index].robotId})
   }else{
     // No robot available -> add to queue
     activeRequests.push(request) // Doesn't need completed option
@@ -255,7 +278,7 @@ function setComplete(requestId){
   });
 
   // Removes the request from the processingRequests list
-  var index = processingRequests.findIndex(request => request.id = requestId);
+  var index = processingRequests.findIndex(request => request.id == requestId);
   processingRequests.splice(index,1)
 }
 
@@ -292,11 +315,11 @@ wss.on('connection', function connection(ws) {
       if (activeRequests.length > 0) {
         var instruction = activeRequests.shift();
         ws.send(JSON.stringify(instruction));
-        console.log('send: %s', instruction);
+        console.log('send: %s', JSON.stringify(instruction));
         //Save the id for later use
         ws.processRequestId = instruction.id;
         //Add the request to the processing list
-        processingRequests.push({"id":ws.processRequestId})
+        processingRequests.push({"id":ws.processRequestId, "robotId":ws.robotId})
       } else {
         // No instruction in the queue thus add to iddle list
         idleRobotIds.push(ws.robotId)
@@ -313,12 +336,12 @@ wss.on('connection', function connection(ws) {
       }
 
     } else if (command.status === "Position and queue progress update") {
-      var index = processingRequests.findIndex(request => request.id = ws.processRequestId);
+      var index = processingRequests.findIndex(request => request.id == ws.processRequestId);
       processingRequests[index].position = command.position // String
       processingRequests[index].progress = command.progress // [currentInstruction,totalInstructions] #Integers
       console.log(`Position:${processingRequests[index].position} , Queue progress: ${processingRequests[index].progress}`);
     } else if (command.status === "Position update"){
-      var index = processingRequests.findIndex(request => request.id = ws.processRequestId);
+      var index = processingRequests.findIndex(request => request.id == ws.processRequestId);
       processingRequests[index].position = command.position // String
       console.log(`Position:${processingRequests[index].position}`);
     }
