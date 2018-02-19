@@ -22,11 +22,22 @@ class Request extends Component {
     super(props);
   }
   render() {
-    var {id, item, title, status, completion, steps} = this.props.request;
-    if (completion === steps) {
+    var {
+      id,
+      item,
+      title,
+      status,
+      completion,
+      steps
+    } = this.props.request;
+    var hideProgress = false;
+    const now = completion / steps * 100;
+    console.log(now);
+    if (steps < 1) {
+      hideProgress = true;
+    } else if (completion === steps) {
       this.props.alert.success(`Request #${id} Complete`);
     }
-    const now = completion / steps * 100;
     const message = `Retrieving ${item.name} (${item.code})`;
     return (<Panel>
       <Panel.Heading>
@@ -35,8 +46,8 @@ class Request extends Component {
       </Panel.Heading>
       <Panel.Body>
         <p>{message}</p>
-        <ProgressBar active="active" striped="striped" bsStyle="info" now={now} label={`${completion}/${steps}`}/>
-        <p>{this.state.status}</p>
+        {!hideProgress && <ProgressBar active="active" striped="striped" bsStyle="info" now={now} label={`${completion}/${steps}`}/>}
+        <p>{status}</p>
         <ButtonGroup>
           <Button>Cancel</Button>
         </ButtonGroup>
