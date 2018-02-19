@@ -33,7 +33,8 @@ class App extends Component {
         <Row className="content">
           <Col className="App-pane App-left-pane" sm={7} lg={9}>
             <Tabs defaultActiveKey={1} id="uncontrolled-tab-example">
-              <Tab eventKey={1} title="Request">
+              <Tab eventKey={1} title="Browse Inventory"><Inventory/></Tab>
+              <Tab eventKey={2} title="Request">
                 <Panel bsStyle="primary">
                   <Panel.Heading>
                     <Panel.Title componentClass="h3">Retrieve Item:</Panel.Title>
@@ -43,7 +44,6 @@ class App extends Component {
                   </Panel.Body>
                 </Panel>
               </Tab>
-              <Tab eventKey={2} title="Browse Inventory"><Inventory/></Tab>
               <Tab eventKey={3} title="Map" disabled="disabled"></Tab>
             </Tabs>
           </Col>
