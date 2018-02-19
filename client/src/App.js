@@ -5,19 +5,11 @@ import {
   Grid,
   Row,
   Col,
-  Panel,
-  Button,
-  FormGroup,
-  FormControl,
-  HelpBlock,
-  ControlLabel,
-  ProgressBar,
-  ButtonGroup
+  Panel
 } from 'react-bootstrap'
 import {withAlert} from 'react-alert'
 import FormExample from './FormExample'
 import './App.css'
-import {lastId, incrementLastId, requests, items} from './Globals'
 import RequestPane from './RequestPane'
 import Inventory from './Inventory'
 

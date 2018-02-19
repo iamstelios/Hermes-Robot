@@ -1,21 +1,11 @@
 import React, {Component} from 'react'
 import {
-  Tabs,
-  Tab,
-  Grid,
-  Row,
-  Col,
   Panel,
   Button,
-  FormGroup,
-  FormControl,
-  HelpBlock,
-  ControlLabel,
   ProgressBar,
   ButtonGroup
 } from 'react-bootstrap'
 import {withAlert} from 'react-alert'
-import {lastId, incrementLastId, requests, items} from './Globals'
 
 class Request extends Component {
   constructor(props, context) {

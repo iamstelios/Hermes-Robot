@@ -1,15 +1,14 @@
 import React, {Component} from 'react'
-import {lastId, incrementLastId, requests, items} from './Globals'
 import {Tabs, Tab} from 'react-bootstrap'
 import RequestList from './RequestList'
-import {connect, PromiseState} from 'react-refetch'
+import {connect} from 'react-refetch'
 
 class RequestPane extends Component {
   render() {
     const {requestsFetch} = this.props;
     var activeRequests = (<RequestList list={[]}/>);
     if (requestsFetch.pending) {
-      const activeRequests = (<RequestList list={[]}/>);
+      activeRequests = (<RequestList list={[]}/>);
     } else if (requestsFetch.rejected) {
       activeRequests = (<RequestList list={[]}/>);
     } else if (requestsFetch.fulfilled) {

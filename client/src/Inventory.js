@@ -1,23 +1,11 @@
 import React, {Component} from 'react'
 import {
-  Tabs,
-  Tab,
-  Grid,
-  Row,
-  Col,
   Panel,
-  Button,
-  FormGroup,
-  FormControl,
-  HelpBlock,
-  ControlLabel,
-  ProgressBar,
-  ButtonGroup
+  Button
 } from 'react-bootstrap'
 import {withAlert} from 'react-alert'
-import FormExample from './FormExample'
 import './App.css'
-import {lastId, incrementLastId, requests, items} from './Globals'
+import {items} from './Globals'
 
 class Inventory extends Component {
   constructor(props, context) {

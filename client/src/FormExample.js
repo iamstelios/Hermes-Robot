@@ -1,7 +1,7 @@
 import React, {Component} from 'react'
 import {withAlert} from 'react-alert'
 import {FormGroup, FormControl, ControlLabel, HelpBlock, Button} from 'react-bootstrap'
-import {lastId, incrementLastId, requests, items} from './Globals'
+import {incrementLastId, requests, items} from './Globals'
 
 class ResultPreview extends Component {
   render() {
