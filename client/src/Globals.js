@@ -6,7 +6,7 @@ export function incrementLastId() {
 export var requests = [];
 export const items = [
   {
-    code: '0',
+    code: 0,
     name: 'Sandpaper, Wet and Dry, Fine',
     location: {
       store: 0,
@@ -14,7 +14,7 @@ export const items = [
       y: 0
     }
   }, {
-    code: '1',
+    code: 1,
     name: 'Torque screwdriver with assorted bits',
     location: {
       store: 0,
@@ -22,7 +22,7 @@ export const items = [
       y: 1
     }
   }, {
-    code: '2',
+    code: 2,
     name: 'Toothed lock washers, 30mm',
     location: {
       store: 0,
@@ -30,7 +30,7 @@ export const items = [
       y: 0
     }
   }, {
-    code: '3',
+    code: 3,
     name: 'Junior hack saw',
     location: {
       store: 0,
@@ -38,7 +38,7 @@ export const items = [
       y: 3
     }
   }, {
-    code: '4',
+    code: 4,
     name: 'Glue gun',
     location: {
       store: 0,
