@@ -30,23 +30,26 @@ class Request extends Component {
       completion,
       steps
     } = this.props.request;
-    var hideProgress = false;
+    var assigned = true;
     const now = completion / steps * 100;
     console.log(now);
     if (steps < 1) {
-      hideProgress = true;
+      assigned = false;
     } else if (completion === steps) {
       this.props.alert.success(`Request #${id} Complete`);
     }
     const message = `Retrieving ${item.name} (${item.code})`;
-    return (<Panel>
+    var panelClass = assigned
+      ? ''
+      : 'unassigned-request';
+    return (<Panel className={panelClass}>
       <Panel.Heading>
         <Panel.Title componentClass="h3">{title}&nbsp;(#{id})
         </Panel.Title>
       </Panel.Heading>
       <Panel.Body>
         <p>{message}</p>
-        {!hideProgress && <ProgressBar active="active" striped="striped" bsStyle="info" now={now} label={`${completion}/${steps}`}/>}
+        {assigned && <ProgressBar active="active" striped="striped" bsStyle="info" now={now} label={`${completion}/${steps}`}/>}
         <p>{status}</p>
         <ButtonGroup>
           <Button>Cancel</Button>

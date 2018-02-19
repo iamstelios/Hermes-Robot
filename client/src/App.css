@@ -46,6 +46,12 @@
   padding: 0;
 }
 
+.unassigned-request,
+.unassigned-request h3,
+.unassigned-request button {
+  color: grey;
+}
+
 h4 {
   text-align: center;
   font-weight: bold;
