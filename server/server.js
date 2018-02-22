@@ -219,8 +219,8 @@ requestRouter.post('/', function(req, res) {
     index = robots.findIndex(ws => ws.robotId == robotId);
     robots[index].processRequestId = request.id;
     robots[index].send(JSON.stringify(request));
-    processingRequests.push({"id":robots[index].processRequestId, "robotId":robots[index].robotId})
-  }else{
+    processingRequests.push({"id": robots[index].processRequestId, "robotId": robots[index].robotId})
+  } else {
     // No robot available -> add to queue
     activeRequests.push(request) // Doesn't need completed option
   }
@@ -309,7 +309,7 @@ function setComplete(requestId) {
 
   // Removes the request from the processingRequests list
   var index = processingRequests.findIndex(request => request.id == requestId);
-  processingRequests.splice(index,1)
+  processingRequests.splice(index, 1)
 }
 
 //Returns true if request cancelled
@@ -336,46 +336,56 @@ wss.on('connection', function connection(ws) {
   nextRobotId++;
   robots.push(ws);
   ws.processRequestId = -1
-  ws.on('message', function incoming(message) {
-    console.log('received: %s', message);
-    command = JSON.parse(message);
-    if (command.status === "Requesting new instruction") {
-      setComplete(ws.processRequestId);
+  ws.on('message', function incoming(data) {
+    console.log('received: %s', data);
+    debugger;
+    message = JSON.parse(data);
 
-      if (activeRequests.length > 0) {
-        var instruction = activeRequests.shift();
-        ws.send(JSON.stringify(instruction));
-        console.log('send: %s', JSON.stringify(instruction));
-        //Save the id for later use
-        ws.processRequestId = instruction.id;
-        //Add the request to the processing list
-        processingRequests.push({"id":ws.processRequestId, "robotId":ws.robotId})
-      } else {
-        // No instruction in the queue thus add to iddle list
-        idleRobotIds.push(ws.robotId)
-        console.log(`Robot with id: ${ws.robotId} added to the idle list`)
+    const processMessageFromRobot = {
+      "status": {
+        "Requesting new instruction": function() {
+          setComplete(ws.processRequestId);
+          if (activeRequests.length > 0) {
+            var instruction = activeRequests.shift();
+            ws.send(JSON.stringify(instruction));
+            console.log('send: %s', JSON.stringify(instruction));
+            //Save the id for later use
+            ws.processRequestId = instruction.id;
+            //Add the request to the processing list
+            processingRequests.push({"id": ws.processRequestId, "robotId": ws.robotId})
+          } else {
+            // No instruction in the queue thus add to iddle list
+            idleRobotIds.push(ws.robotId)
+            console.log(`Robot with id: ${ws.robotId} added to the idle list`)
+          }
+        },
+        "Position and Queue Update": function() {
+          var index = processingRequests.findIndex(request => request.id == ws.processRequestId);
+          processingRequests[index].position = message.position // String
+          processingRequests[index].progress = message.progress // [currentInstruction,totalInstructions] #Integers
+          console.log(`Position:${processingRequests[index].position} , Queue progress: ${processingRequests[index].progress}`);
+        },
+        "Position Update": function() {
+          var index = processingRequests.findIndex(request => request.id == ws.processRequestId);
+          processingRequests[index].position = message.position // String
+          console.log(`Position:${processingRequests[index].position}`);
+        }
+      },
+      "check": {
+        "Cancellation": function() {
+          if (checkCancelled(ws.processRequestId)) {
+            ws.send(cancelled_json);
+            console.log('send: %s', cancelled_json);
+          } else {
+            ws.send(not_cancelled_json);
+            console.log('send: %s', not_cancelled_json);
+          }
+        }
       }
-
-    } else if (command.status === "Check Cancellation") {
-      if (checkCancelled(ws.processRequestId)) {
-        ws.send(cancelled_json);
-        console.log('send: %s', cancelled_json);
-      } else {
-        ws.send(not_cancelled_json);
-        console.log('send: %s', not_cancelled_json);
-      }
-
-    } else if (command.status === "Position and queue progress update") {
-      var index = processingRequests.findIndex(request => request.id == ws.processRequestId);
-      processingRequests[index].position = command.position // String
-      processingRequests[index].progress = command.progress // [currentInstruction,totalInstructions] #Integers
-      console.log(`Position:${processingRequests[index].position} , Queue progress: ${processingRequests[index].progress}`);
-    } else if (command.status === "Position update"){
-      var index = processingRequests.findIndex(request => request.id == ws.processRequestId);
-      processingRequests[index].position = command.position // String
-      console.log(`Position:${processingRequests[index].position}`);
     }
 
+
+    processMessageFromRobot[message.type][message[message.type]]();
   });
   ws.on('close', function close() {
     // Remove robot id from idle (if in idle)

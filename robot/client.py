@@ -256,15 +256,15 @@ def action_caller(instruction):
         dst = instruction["dst"]
         yield from go(dst)
     elif action == "store":
-        #Destination should be the base the box is to be stored
-        level = instruction["level"]
+        # Destination should be the base the box is to be stored
+        level = instruction["item"]["location"]["y"]
         dst = instruction["dst"]
-        src  = instruction["src"]
-        yield from store(level,src,dst)
-    elif action == "retrieve":
-        #Source should be the base the box to be retrieved is located
-        level = instruction["level"]
         src = instruction["src"]
+        yield from store(level, src, dst)
+    elif action == "retrieve":
+        # Source should be the base the box to be retrieved is located
+        level = instruction["item"]["location"]["y"]
+        src = instruction["item"]["location"]["store"]
         dst = instruction["dst"]
         yield from retrieve(level, src, dst)
     elif action == "transfer":
@@ -287,9 +287,9 @@ def handler(ip):
         return
     while True:
         try:
-            status = "Requesting new instruction"
-            yield from websocket.send(status)
-            print("> {}".format(status))
+            message = {"type": "status", "status": "Requesting new instruction"}
+            yield from websocket.send(json.dumps(message))
+            print("> {}".format(message))
 
             instruction_raw = yield from websocket.recv()
             print("< {}".format(instruction_raw))
@@ -305,16 +305,17 @@ def handler(ip):
                 new_position, totalInstructions, currentInstruction = next(gen)
                 while True:
                     try:
-                        #TODO change to JSON format
-                        status = "Update Position: " + new_position + " Queue progress: " + str(currentInstruction) + "/" + str(totalInstructions)
-                        yield from websocket.send(status)
-                        print("> {}".format(status))
+                        # TODO change to JSON format
+                        message = {"type": "status", "status": "Position and Queue Update", "position": new_position,
+                                   "progress": str(currentInstruction) + "/" + str(totalInstructions)}
+                        yield from websocket.send(json.dumps(message))
+                        print("> {}".format(message))
 
                         if not cancelled:
-                            status = "Check Cancellation"
-                            yield from websocket.send(status)
-                            print("> {}".format(status))
-                            
+                            message = {"type": "check", "check": "Cancellation"}
+                            yield from websocket.send(json.dumps(message))
+                            print("> {}".format(message))
+
                             cancel_instruction_raw = yield from websocket.recv()
                             print("< {}".format(cancel_instruction_raw))
                             cancel_instruction = json.loads(cancel_instruction_raw)
@@ -327,10 +328,11 @@ def handler(ip):
                         else:
                             # Just keep updating position until cancelation complete
                             try:
-                                #TODO change to JSON format
-                                status = "Update Position: " + new_position
-                                yield from websocket.send(status)
-                                print("> {}".format(status))
+                                # TODO change to JSON format
+                                message = {"type": "status", "status": "Position Update",
+                                           "position": new_position}
+                                yield from websocket.send(json.dumps(message))
+                                print("> {}".format(message))
 
                                 # Continue the operation
                                 new_position, totalInstructions, currentInstruction = gen.send(cancelled)
