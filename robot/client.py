@@ -353,11 +353,12 @@ def handler(ip):
     yield from websocket.close()
 
 
-    #Default ip address
-    ip = "192.168.137.1"
-    if(len(sys.argv)>1):
-        ip=sys.argv[1]
-        #Check if the arguement given is a well defined ip address
+def main():
+    # Default ip address
+    ip = "127.0.0.1"  # "192.168.137.1"
+    if (len(sys.argv) > 1):
+        ip = sys.argv[1]
+        # Check if the arguement given is a well defined ip address
         pattern = re.compile("\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}")
         test = pattern.match(ip)
         if (not test):
