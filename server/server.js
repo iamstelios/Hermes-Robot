@@ -65,16 +65,16 @@ statusRouter.get('/idleRobotIds', function(req, res) {
 statusRouter.get('/:id', function(req, res) {
   var requestId = req.params.id;
   var index = processingRequests.findIndex(request => request.id == requestId);
-  if(index>=0){
+  if (index >= 0) {
     res.send(processingRequests[index]);
-  }else{
+  } else {
     res.send('not processing')
   }
-  
+
 });
 
 //TODO: ASK ALEX IF NEEDED
-/* 
+/*
 statusRouter.post('/', function(req, res) {
   var id = mutate("lastInvId", val => val + 1);
   var item = req.body;
