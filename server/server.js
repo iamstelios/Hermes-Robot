@@ -278,7 +278,7 @@ app.get('/api/users/:userId/requests/', function (req, res) {
 
 // Start listening
 app.listen(port, function () {
-    console.log("Listening on port ", port);
+    console.log("Starting API server...\nListening on port ", port);
 });
 
 //------------------ Robot server Connection -----------------------
