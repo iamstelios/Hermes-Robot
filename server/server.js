@@ -7,7 +7,7 @@ const app = express();
 const port = process.env.PORT || 8080;
 storage.initSync();
 
-if (process.argv[2] === "clear") {
+if (process.argv[2] !== "persist") {
     // Persistent storage clear
     console.log("Clearing local storage...");
     storage.clearSync();
