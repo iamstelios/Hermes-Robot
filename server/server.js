@@ -282,7 +282,7 @@ const WebSocket = require('ws');
 // Holds all the robots websockets
 robots = []
 
-const wss = new WebSocket.Server({port: 9000});
+const wss = new WebSocket.Server({port: 8000});
 
 // Indexes of the robots that are not processing an instruction
 idleRobotIds = [];
@@ -328,7 +328,6 @@ const not_cancelled_json = `{
 }
 `
 
-// POTENTIAL RACE CONDITIONS WHEN MODIFYING processingRequests!
 wss.on('connection', function connection(ws) {
   console.log("New robot connected!")
   // Each robot connected gets a unique id
