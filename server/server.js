@@ -196,7 +196,7 @@ requestRouter.post('/', function (req, res) {
     request.completed = "no"; // Should have values "no", "yes" , "cancelled"
     switch (request.action) {
         case "retrieve":
-            request.title = "Retrieve " + request.item.name + "from store" + request.item.location.store;
+            request.title = "Retrieve " + request.item.name + " from store " + request.item.location.store;
             break;
         default:
     }
