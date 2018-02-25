@@ -204,25 +204,31 @@ requestRouter.post('/', function (req, res) {
     request.completion = 0;
     request.steps = -1;
     console.log(request);
-    // {id, item, title, status, completion, steps}
+    mutate("requests", function (val) {
+        val.push(request);
+        return val;
+    });
 
     if (idleRobotIds.length > 0) {
         // Assign the instruction to the first robot available
         var robotId = idleRobotIds.shift();
-        var index = robots.findIndex(function (ws) {
-            return ws.robotId === robotId;
+        var index = robots.findIndex(function (robot) {
+            return robot.robotId === robotId;
         });
         robots[index].processRequestId = request.id;
         robots[index].send(JSON.stringify(request));
         processingRequests.push({"id": robots[index].processRequestId, "robotId": robots[index].robotId})
+        mutate("requests", function (val) {
+            var i = val.findIndex(function (req) {
+                return req.id === request.id;
+            });
+            val[i].status = "Assigned to robot #" + robotId.toString();
+            return val;
+        });
     } else {
         // No robot available -> add to queue
         activeRequests.push(request) // Doesn't need completed option
     }
-    var requests = mutate("requests", function (val) {
-        val.push(request);
-        return val;
-    });
     res.send(request);
 });
 
@@ -351,7 +357,14 @@ wss.on('connection', function connection(ws) {
                         //Save the id for later use
                         ws.processRequestId = instruction.id;
                         //Add the request to the processing list
-                        processingRequests.push({"id": ws.processRequestId, "robotId": ws.robotId})
+                        processingRequests.push({"id": ws.processRequestId, "robotId": ws.robotId});
+                        mutate("requests", function (val) {
+                            var i = val.findIndex(function (request) {
+                                return request.id === ws.processRequestId;
+                            });
+                            val[i].status = "Assigned to robot #" + ws.robotId.toString();
+                            return val;
+                        });
                     } else {
                         // No instruction in the queue thus add to idle list
                         idleRobotIds.push(ws.robotId);
@@ -361,6 +374,15 @@ wss.on('connection', function connection(ws) {
                 "Position and Queue Update": function () {
                     var index = processingRequests.findIndex(function (request) {
                         return request.id === ws.processRequestId;
+                    });
+                    mutate("requests", function (val) {
+                        var i = val.findIndex(function (request) {
+                            return request.id === ws.processRequestId;
+                        });
+                        var progress = message.progress.split("/");
+                        val[i].completion = progress[0];
+                        val[i].steps = progress[1];
+                        return val;
                     });
                     processingRequests[index].position = message.position; // String
                     processingRequests[index].progress = message.progress; // [currentInstruction,totalInstructions] #Integers
