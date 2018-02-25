@@ -14,11 +14,11 @@ if (process.argv[2] === "clear") {
 }
 
 function storeIfNotStored(key, value) {
-  // Store value into the persisent storage
+  // Store value into the persistent storage
   // Used for initialization
-  if (storage.getItemSync(key) == undefined) {
-    console.log(`${key} is undefined. Setting to ${JSON.stringify(value)}`);
-    storage.setItemSync(key, value)
+  if (storage.getItemSync(key) === undefined) {
+    console.log(key," is undefined. Setting to", JSON.stringify(value));
+    storage.setItemSync(key, value);
   }
 }
 
@@ -64,7 +64,7 @@ statusRouter.get('/idleRobotIds', function(req, res) {
 // Send back the process progress of the request queried
 statusRouter.get('/:id', function(req, res) {
   var requestId = req.params.id;
-  var index = processingRequests.findIndex(request => request.id == requestId);
+  var index = processingRequests.findIndex(function (request) { return request.id === requestId; });
   if (index >= 0) {
     res.send(processingRequests[index]);
   } else {
@@ -72,27 +72,6 @@ statusRouter.get('/:id', function(req, res) {
   }
 
 });
-
-//TODO: ASK ALEX IF NEEDED
-/*
-statusRouter.post('/', function(req, res) {
-  var id = mutate("lastInvId", val => val + 1);
-  var item = req.body;
-  item.id = id;
-  var inventory = mutate("inventory", val => {
-    val.push(request);
-    return val;
-  });
-  console.log(inventory);
-  res.send(item);
-});
-statusRouter.get('/:id', lookupRobot, function(req, res) {});
-statusRouter.patch('/:id', lookupRobot, function(req, res) {});
-statusRouter.delete('/:id', lookupRobot, function(req, res) {});
-*/
-app.use('/api/status', statusRouter);
-
-// ===================================================
 
 // ============ INVENTORY ============================
 // Modular route handler for route /api/inventory
@@ -111,11 +90,11 @@ inventoryRouter.put('/', function(req, res) {
 // Save a single item
 inventoryRouter.post('/', function(req, res) {
   // Calculate the id to be assigned to the request
-  var id = mutate("lastInvId", val => val + 1);
+  var id = mutate("lastInvId", function (val) {return val + 1;});
   var item = req.body;
   item.code = id;
   // Add the item in the end of the inventory
-  var inventory = mutate("inventory", val => {
+  var inventory = mutate("inventory", function (val) {
     val.push(item);
     return val;
   });
@@ -130,7 +109,7 @@ inventoryRouter.get('/:id', lookupItem, function(req, res) {
 inventoryRouter.put('/:id', lookupItem, function(req, res) {
   var item = req.body;
   item.code = req.params.id;
-  var inventory = mutate("inventory", val => {
+  var inventory = mutate("inventory", function(val) {
     val[req.itemIndex] = item;
     return val;
   });
@@ -139,12 +118,12 @@ inventoryRouter.put('/:id', lookupItem, function(req, res) {
 });
 // Delete item with given id
 inventoryRouter.delete('/:id', lookupItem, function(req, res) {
-  mutate("inventory", val => {
+  mutate("inventory", function (val) {
     val.splice(req.itemIndex, 1);
     return val;
   });
   res.statusCode = 204;
-  console.log("Item id: " + item.code + " deleted from the inventory.");
+  console.log("Item id: " + req.item.code + " deleted from the inventory.");
   res.send();
 });
 // Connect the inventoryRouter to the app
@@ -154,8 +133,8 @@ app.use('/api/inventory', inventoryRouter);
 
 // Finds the Index of the robot using its id
 function lookupRobot(req, res, next) {
-  const robotIndex = storage.getItemSync("robots").findIndex(robot => robot.id == req.params.id);
-  if (robotIndex == -1) {
+  const robotIndex = storage.getItemSync("robots").findIndex(function (robot) {return robot.id === req.params.id;});
+  if (robotIndex === -1) {
     res.statusCode = 404;
     return res.json({errors: ["Robot not found"]});
   }
@@ -165,8 +144,8 @@ function lookupRobot(req, res, next) {
 
 // Finds the Index of the item in the inventory from its id
 function lookupItem(req, res, next) {
-  const itemIndex = storage.getItemSync("inventory").findIndex(item => item.code == req.params.id);
-  if (itemIndex == -1) {
+  const itemIndex = storage.getItemSync("inventory").findIndex(function (item) {return item.code === req.params.id;});
+  if (itemIndex === -1) {
     res.statusCode = 404;
     return res.json({errors: ["Item not found"]});
   }
@@ -176,8 +155,8 @@ function lookupItem(req, res, next) {
 
 // Finds the Index of the item in the inventory from its id
 function lookupRequest(req, res, next) {
-  const requestIndex = storage.getItemSync("requests").findIndex(request => request.id == req.params.id);
-  if (requestIndex == -1) {
+  const requestIndex = storage.getItemSync("requests").findIndex(function (request) {return request.id === req.params.id;});
+  if (requestIndex === -1) {
     res.statusCode = 404;
     return res.json({errors: ["Request not found"]});
   }
@@ -191,19 +170,20 @@ var requestRouter = express.Router();
 var activeRequests = [];
 
 // Return all the requests made so far
-requestRouter.get('/', (req, res) => {
+requestRouter.get('/', function (req, res) {
   res.send(storage.getItemSync("requests"));
 });
 
 // Add another request
 requestRouter.post('/', function(req, res) {
-  var id = mutate("lastReqId", val => val + 1);
+  debugger;
+  var id = mutate("lastReqId", function (val) {return val + 1;});
   var request = req.body;
   request.id = id;
-  request.completed = "no" // Should have values "no", "yes" , "cancelled"
+  request.completed = "no"; // Should have values "no", "yes" , "cancelled"
   switch (request.action) {
     case "retrieve":
-      request.title = `Retrieve ${request.item.name} from store ${request.item.location.store}`;
+      request.title = "Retrieve " + request.item.name + "from store" + request.item.location.store;
       break;
     default:
   }
@@ -216,7 +196,7 @@ requestRouter.post('/', function(req, res) {
   if (idleRobotIds.length > 0) {
     // Assign the instruction to the first robot available
     var robotId = idleRobotIds.shift();
-    index = robots.findIndex(ws => ws.robotId == robotId);
+    var index = robots.findIndex(function (ws) { return ws.robotId === robotId;});
     robots[index].processRequestId = request.id;
     robots[index].send(JSON.stringify(request));
     processingRequests.push({"id": robots[index].processRequestId, "robotId": robots[index].robotId})
@@ -224,7 +204,7 @@ requestRouter.post('/', function(req, res) {
     // No robot available -> add to queue
     activeRequests.push(request) // Doesn't need completed option
   }
-  var requests = mutate("requests", val => {
+  var requests = mutate("requests", function (val) {
     val.push(request);
     return val;
   });
@@ -233,12 +213,12 @@ requestRouter.post('/', function(req, res) {
 
 // Cancel request if not completed
 requestRouter.delete('/:id', lookupRequest, function(req, res) {
-  mutate("requests", val => {
+  mutate("requests", function (val) {
     if (val[req.requestIndex].completed === "no") {
       // Need to change completed to cancelled
       val[req.requestIndex].completed = "cancelled";
       // Remove from active queue
-      index = activeRequests.findIndex(request => request.id == req.params.id)
+      var index = activeRequests.findIndex(function (request) {return request.id === req.params.id;});
       if (index > -1) {
         activeRequests.splice(index, 1);
         console.log("Cancelled request removed from active queue")
@@ -259,30 +239,32 @@ app.get('/api/users/:userId/requests/', function(req, res) {
   var requests = storage.getItemSync("requests").filter(function(request) {
     switch (request.action) {
       case "retrieve":
-        return request.dst == req.params.userId;
+        return request.dst === req.params.userId;
       case "store":
-        return request.item.store == req.params.userId;
+        return request.item.store === req.params.userId;
       case "send":
-        return request.item.store == req.params.userId;
+        return request.item.store === req.params.userId;
       default:
         return false;
     }
   }).filter(function(request) {
-    return req.query.completed == request.completed;
+    return req.query.completed === request.completed;
   });
   res.send(requests)
 });
 
 // Start listening
-app.listen(port, () => console.log(`Listening on port ${port}`));
+app.listen(port, function () {
+    console.log("Listening on port ", port);
+});
 
 //------------------ Robot server Connection -----------------------
 
-const WebSocket = require('ws');
+var WebSocket = require('ws');
 // Holds all the robots websockets
-robots = []
+robots = [];
 
-const wss = new WebSocket.Server({port: 8000});
+var wss = new WebSocket.Server({port: 8000});
 
 // Indexes of the robots that are not processing an instruction
 idleRobotIds = [];
@@ -299,47 +281,41 @@ function setComplete(requestId) {
     return;
   }
   // Changes completed property in request history
-  const requestIndex = storage.getItemSync("requests").findIndex(request => request.id == requestId);
-  mutate("requests", val => {
-    if (val[requestIndex].completed != "cancelled") {
+  const requestIndex = storage.getItemSync("requests").findIndex(function (request) {return request.id === requestId;});
+  mutate("requests", function (val) {
+    if (val[requestIndex].completed !== "cancelled") {
       val[requestIndex].completed = "completed";
     }
     return val;
   });
 
   // Removes the request from the processingRequests list
-  var index = processingRequests.findIndex(request => request.id == requestId);
+  var index = processingRequests.findIndex(function (request) {return request.id === requestId;});
   processingRequests.splice(index, 1)
 }
 
 //Returns true if request cancelled
 function checkCancelled(requestId) {
-  var requests = storage.getItemSync("requests")
-  const requestIndex = requests.findIndex(request => request.id == requestId);
+  var requests = storage.getItemSync("requests");
+  const requestIndex = requests.findIndex(function(request) {return request.id === requestId});
   return requests[requestIndex].completed === "cancelled";
 }
 
-const cancelled_json = `{
-  "cancelled": true
-}
-`
-const not_cancelled_json = `{
-  "cancelled": false
-}
-`
+var cancelled_json = '{"cancelled": true}';
+var not_cancelled_json = '{"cancelled": false}';
 
 // POTENTIAL RACE CONDITIONS WHEN MODIFYING processingRequests!
 wss.on('connection', function connection(ws) {
-  console.log("New robot connected!")
+  console.log("New robot connected!");
   // Each robot connected gets a unique id
   ws.robotId = nextRobotId;
   nextRobotId++;
   robots.push(ws);
-  ws.processRequestId = -1
+  ws.processRequestId = -1;
   ws.on('message', function incoming(data) {
     console.log('received: %s', data);
     debugger;
-    message = JSON.parse(data);
+    var message = JSON.parse(data);
 
     const processMessageFromRobot = {
       "status": {
@@ -354,21 +330,21 @@ wss.on('connection', function connection(ws) {
             //Add the request to the processing list
             processingRequests.push({"id": ws.processRequestId, "robotId": ws.robotId})
           } else {
-            // No instruction in the queue thus add to iddle list
-            idleRobotIds.push(ws.robotId)
-            console.log(`Robot with id: ${ws.robotId} added to the idle list`)
+            // No instruction in the queue thus add to idle list
+            idleRobotIds.push(ws.robotId);
+            console.log("Robot with id: ", ws.robotId, " added to the idle list")
           }
         },
         "Position and Queue Update": function() {
-          var index = processingRequests.findIndex(request => request.id == ws.processRequestId);
-          processingRequests[index].position = message.position // String
-          processingRequests[index].progress = message.progress // [currentInstruction,totalInstructions] #Integers
-          console.log(`Position:${processingRequests[index].position} , Queue progress: ${processingRequests[index].progress}`);
+          var index = processingRequests.findIndex(function (request) {return request.id === ws.processRequestId;});
+          processingRequests[index].position = message.position; // String
+          processingRequests[index].progress = message.progress; // [currentInstruction,totalInstructions] #Integers
+          console.log("Position: ", processingRequests[index].position, ", Queue progress: ", processingRequests[index].progress);
         },
         "Position Update": function() {
-          var index = processingRequests.findIndex(request => request.id == ws.processRequestId);
-          processingRequests[index].position = message.position // String
-          console.log(`Position:${processingRequests[index].position}`);
+          var index = processingRequests.findIndex(function (request) {return request.id === ws.processRequestId;});
+          processingRequests[index].position = message.position; // String
+          console.log("Position: ", processingRequests[index].position);
         }
       },
       "check": {
@@ -382,14 +358,13 @@ wss.on('connection', function connection(ws) {
           }
         }
       }
-    }
-
+    };
 
     processMessageFromRobot[message.type][message[message.type]]();
   });
   ws.on('close', function close() {
     // Remove robot id from idle (if in idle)
-    index = idleRobotIds.findIndex(id => id == ws.robotId);
+    var index = idleRobotIds.findIndex(function (id) {return id === ws.robotId;});
     idleRobotIds.splice(index, 1);
     console.log('Robot %d disconnected', ws.robotId);
   });
