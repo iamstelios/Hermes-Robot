@@ -25,10 +25,19 @@ class RingBuf:
         self._data[self._i] = val
         self._i = (self._i+1) % self._size
 
-    """
-    Returns the n-th most recently pushed value, counting from 0. """
-    def get(self, n=0):
+    """ Returns the n-th most recently pushed value, counting from 0. """
+    def get(self, n = 0):
         return self._data[(self._i-n-1) % self._size]
+
+    """
+    Returns n most recently pushed values as a list, ordered from most
+    recent to oldest.
+    """
+    def getn(self, n = 1):
+        vals = []
+        for i in range(0, n):
+            vals.append(self.get(i))
+        return vals
 
     """
     Returns the arithmetic mean of the last n pushed values. Only works

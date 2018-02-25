@@ -21,6 +21,9 @@ class ArduinoSensorsManager:
         if not line.startswith(b"All systems online."):
             raise IOError("Cannot find Arduino at " + devArduino)
 
+    def __del__(self):
+        self._comm.close()
+
     """
     Reads the n-th Reed switch and returns True if there is
     a magnet near, otherwise False.
@@ -32,7 +35,3 @@ class ArduinoSensorsManager:
         val >>= n;
         val &= 0x1
         return val != 0x1
-
-    def __del__(self):
-        self._comm.close()
-
