@@ -22,7 +22,7 @@ class Request extends Component {
     } = this.props.request;
     var assigned = true;
     const now = completion / steps * 100;
-    if (steps < 1) {
+    if (status === "unassigned") {
       assigned = false;
     } else if (completion === steps) {
       this.props.alert.success(`Request #${id} Complete`);
