@@ -1,14 +1,14 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const storage = require('./storage');
-const inventoryRouter = require('./inventory-router');
-const statusRouter = require('./status-router');
-const requestRouter = require('./request-router');
-const userRouter = require('./user-router');
+var express = require('express');
+var bodyParser = require('body-parser');
+var storage = require('./storage');
+var inventoryRouter = require('./inventory-router');
+var statusRouter = require('./status-router');
+var requestRouter = require('./request-router');
+var userRouter = require('./user-router');
 
-const app = express();
+var app = express();
 
-const port = process.env.PORT || 8080;
+var port = process.env.PORT || 8080;
 
 if (process.argv[2] !== "persist") {
     // Persistent storage clear
@@ -70,7 +70,7 @@ function setComplete(requestId) {
         return;
     }
     // Changes completed property in request history
-    const requestIndex = storage.getItemSync("requests").findIndex(function (request) {
+    var requestIndex = storage.getItemSync("requests").findIndex(function (request) {
         return request.id === requestId;
     });
     storage.mutate("requests", function (val) {
@@ -90,7 +90,7 @@ function setComplete(requestId) {
 //Returns true if request cancelled
 function checkCancelled(requestId) {
     var requests = storage.getItemSync("requests");
-    const requestIndex = requests.findIndex(function (request) {
+    var requestIndex = requests.findIndex(function (request) {
         return request.id === requestId
     });
     return requests[requestIndex].completed === "cancelled";
@@ -112,7 +112,7 @@ wss.on('connection', function connection(ws) {
         debugger;
         var message = JSON.parse(data);
 
-        const processMessageFromRobot = {
+        var processMessageFromRobot = {
             "status": {
                 "Requesting new instruction": function () {
                     setComplete(ws.processRequestId);
