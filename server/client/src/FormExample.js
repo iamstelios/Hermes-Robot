@@ -50,7 +50,7 @@ class FormExample extends React.Component {
       const id = incrementLastId();
       requests.push({id: id, action: 'retrieve', item: this.getItem(), destination: 'garry'});
       this.props.alert.success(`Request #${id} submitted`);
-      console.log(requests);
+      // console.log(requests);
     }
     e.preventDefault();
   }
