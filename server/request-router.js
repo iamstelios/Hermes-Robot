@@ -18,6 +18,11 @@ requestRouter.get('/', function (req, res) {
     res.send(storage.getItemSync("requests"));
 });
 
+// Get a request by id
+requestRouter.get('/:id',lookupRequest, function(req,res){
+    res.send(storage.getItemSync("requests")[req.requestIndex]);
+});
+
 
 // Add another request
 requestRouter.post('/', function (req, res) {
