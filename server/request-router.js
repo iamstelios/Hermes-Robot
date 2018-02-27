@@ -15,7 +15,28 @@ function lookupRequest(req, res, next) {
 
 // Return all the requests (history and current)
 requestRouter.get('/', function (req, res) {
-    res.send(storage.getItemSync("requests"));
+    var user = req.query.user;
+    console.log("user: %s",user);
+    var requests = storage.getItemSync("requests");
+    if(user !== undefined){
+        // Only the ones that are affect the user
+        requests = requests.filter(function (request) {
+            switch (request.action) {
+                case "retrieve":
+                    return request.dst === user;
+                case "store":
+                    return request.src === user;
+                case "transfer":
+                    return request.src === user || request.dst === user;
+                default:
+                    return false;
+            }
+        })
+        res.send(requests);
+    }else{
+        // All the requests
+        res.send(requests);
+    }
 });
 
 // Add another request
@@ -153,7 +174,7 @@ requestRouter.get('/active', function (req, res) {
                     return false;
             }
         })
-        res.send(requests)
+        res.send(requests);
     }else{
         // All the requests
         res.send(activeRequests);
