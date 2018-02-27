@@ -1,9 +1,11 @@
 from time   import time, sleep
 from ev3dev.auto import *
 
-left_motor = LargeMotor(OUTPUT_B);  assert left_motor.connected
+left_motor = LargeMotor(OUTPUT_D);
+assert left_motor.connected
 right_motor = LargeMotor(OUTPUT_C); assert right_motor.connected
-col= ColorSensor();                 assert col.connected
+col = ColorSensor('in4');
+assert col.connected
 col.mode = 'COL-REFLECT'
 
 def run():
