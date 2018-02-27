@@ -20,7 +20,3 @@ exports.mutate = function (key, mutation) {
     storage.setItemSync(key, tmp);
     return tmp;
 };
-
-
-// Queue of active requests
-exports.activeRequests = [];

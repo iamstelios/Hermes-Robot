@@ -4,10 +4,8 @@ var inventoryRouter = express.Router();
 
 // Finds the Index of the item in the inventory from its id
 function lookupItem(req, res, next) {
-    const itemIndex = storage.getItemSync("inventory").findIndex(function (item) {
-        return item.code === req.params.id;
-    });
-    if (itemIndex === -1) {
+    const itemIndex = storage.getItemSync("inventory").findIndex(item => item.code == req.params.id);
+    if (itemIndex == -1) {
         res.statusCode = 404;
         return res.json({errors: ["Item not found"]});
     }
@@ -58,7 +56,7 @@ inventoryRouter.put('/:id', lookupItem, function (req, res) {
 });
 // Delete item with given id
 inventoryRouter.delete('/:id', lookupItem, function (req, res) {
-    mutate("inventory", function (val) {
+    storage.mutate("inventory", function (val) {
         val.splice(req.itemIndex, 1);
         return val;
     });
