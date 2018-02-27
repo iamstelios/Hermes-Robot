@@ -25,10 +25,19 @@ class RingBuf:
         self._data[self._i] = val
         self._i = (self._i+1) % self._size
 
-    """
-    Returns the n-th most recently pushed value, counting from 0. """
-    def get(self, n=0):
+    """ Returns the n-th most recently pushed value, counting from 0. """
+    def get(self, n = 0):
         return self._data[(self._i-n-1) % self._size]
+
+    """
+    Returns n most recently pushed values as a list, ordered from most
+    recent to oldest.
+    """
+    def getn(self, n = 1):
+        vals = []
+        for i in range(0, n):
+            vals.append(self.get(i))
+        return vals
 
     """
     Returns the arithmetic mean of the last n pushed values. Only works
@@ -37,10 +46,10 @@ class RingBuf:
     def avg(self, n):
         if n < 1:
             raise ValueError("Must use at least one value.")
-
         avg = 0
         for i in range(0, n):
             avg += self.get(i)
+
         return avg / n
 
     """
@@ -49,11 +58,11 @@ class RingBuf:
     """
     def var(self, n):
         avg = self.avg(n)
-        
         var = 0
         for i in range(0, n):
             diff = self.get(i) - avg
             var += diff * diff
+
         return var / n
 
     """ Readable representation. """
