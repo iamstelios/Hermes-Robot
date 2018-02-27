@@ -7,7 +7,8 @@ import {
     Col,
     DropdownButton,
     MenuItem,
-    ButtonToolbar
+    ButtonToolbar,
+    Button
 } from 'react-bootstrap'
 import {withAlert} from 'react-alert'
 import './App.css'
@@ -20,6 +21,17 @@ class App extends Component {
         this.state = {
             userId: 1
         };
+    }
+
+    cancelRequest(requestId) {
+        console.log("cancel request: ", requestId);
+        fetch('/api/request/' + requestId, {
+            method: 'delete'
+        })
+            .then(response => response.json())
+            .then(jsonResult => {
+                console.log(jsonResult);
+            });
     }
 
     render() {
@@ -41,7 +53,8 @@ class App extends Component {
                 <Row className="content">
                     <Col className="App-pane App-left-pane" sm={7} lg={9}>
                         <Tabs defaultActiveKey={1} id="uncontrolled-tab-example">
-                            <Tab eventKey={1} title="Browse Inventory"><Inventory/></Tab>
+                            <Tab eventKey={1} title="Browse Inventory"><Button onClick={() => this.cancelRequest(4)}>TEST</Button>
+                            <Inventory/></Tab>
                             <Tab eventKey={2} title="Map" disabled="disabled"></Tab>
                         </Tabs>
                     </Col>
@@ -51,8 +64,9 @@ class App extends Component {
                 </Row>
             </Grid>
 
-        </div>);
+        </div>
+    );
     }
-}
+    }
 
-export default withAlert(App);
+    export default withAlert(App);
