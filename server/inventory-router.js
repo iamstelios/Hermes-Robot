@@ -4,9 +4,7 @@ var inventoryRouter = express.Router();
 
 // Finds the Index of the item in the inventory from its id
 function lookupItem(req, res, next) {
-    const itemIndex = storage.getItemSync("inventory").findIndex(function (item) {
-        return item.code === req.params.id;
-    });
+    const itemIndex = storage.getItemSync("inventory").findIndex(item => item.code == req.params.id);
     if (itemIndex === -1) {
         res.statusCode = 404;
         return res.json({errors: ["Item not found"]});

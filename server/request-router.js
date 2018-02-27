@@ -4,9 +4,7 @@ var requestRouter = express.Router();
 
 // Finds the Index of the item in the inventory from its id
 function lookupRequest(req, res, next) {
-    const requestIndex = storage.getItemSync("requests").findIndex(function (request) {
-        return request.id === req.params.id;
-    });
+    const requestIndex = storage.getItemSync("requests").findIndex(request => request.id == req.params.id);
     if (requestIndex === -1) {
         res.statusCode = 404;
         return res.json({errors: ["Request not found"]});
@@ -62,7 +60,7 @@ requestRouter.post('/', function (req, res) {
         });
     } else {
         // No robot available -> add to queue
-        storage.activeRequests.push(request) // Doesn't need completed option
+        activeRequests.push(request) // Doesn't need completed option
     }
     res.send(request);
 });
@@ -74,11 +72,11 @@ requestRouter.delete('/:id', lookupRequest, function (req, res) {
             // Need to change completed to cancelled
             val[req.requestIndex].completed = "cancelled";
             // Remove from active queue
-            var index = storage.activeRequests.findIndex(function (request) {
+            var index = activeRequests.findIndex(function (request) {
                 return request.id === req.params.id;
             });
             if (index > -1) {
-                storage.activeRequests.splice(index, 1);
+                activeRequests.splice(index, 1);
                 console.log("Cancelled request removed from active queue")
             } else {
                 console.log("Cancelled request is being executed now")

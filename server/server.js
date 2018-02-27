@@ -59,6 +59,8 @@ var wss = new WebSocket.Server({port: 8000});
 idleRobotIds = [];
 // Used for assigning id
 nextRobotId = 0;
+// Queue of active requests not being processed
+activeRequests = [];
 // List of request that are currently being processed
 // Used for position and queue progress updates
 processingRequests = [];
@@ -99,7 +101,6 @@ function checkCancelled(requestId) {
 var cancelled_json = '{"cancelled": true}';
 var not_cancelled_json = '{"cancelled": false}';
 
-// POTENTIAL RACE CONDITIONS WHEN MODIFYING processingRequests!
 wss.on('connection', function connection(ws) {
     console.log("New robot connected!");
     // Each robot connected gets a unique id
@@ -116,8 +117,8 @@ wss.on('connection', function connection(ws) {
             "status": {
                 "Requesting new instruction": function () {
                     setComplete(ws.processRequestId);
-                    if (storage.activeRequests.length > 0) {
-                        var instruction = storage.activeRequests.shift();
+                    if (activeRequests.length > 0) {
+                        var instruction = activeRequests.shift();
                         ws.send(JSON.stringify(instruction));
                         console.log('send: %s', JSON.stringify(instruction));
                         //Save the id for later use
@@ -141,6 +142,7 @@ wss.on('connection', function connection(ws) {
                     var index = processingRequests.findIndex(function (request) {
                         return request.id === ws.processRequestId;
                     });
+                    //TODO: Either remove or add to position update too
                     storage.mutate("requests", function (val) {
                         var i = val.findIndex(function (request) {
                             return request.id === ws.processRequestId;
@@ -151,6 +153,7 @@ wss.on('connection', function connection(ws) {
                         return val;
                     });
                     processingRequests[index].position = message.position; // String
+                    //TODO: REVERT??
                     processingRequests[index].progress = message.progress; // [currentInstruction,totalInstructions] #Integers
                     console.log("Position: ", processingRequests[index].position, ", Queue progress: ", processingRequests[index].progress);
                 },
