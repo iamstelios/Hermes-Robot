@@ -1,0 +1,70 @@
+.App {
+    text-align: center;
+}
+
+.App-header {
+    background-color: #222;
+    color: white;
+    height: 6vh;
+}
+
+.App-title {
+    font-size: 1.5em;
+    text-align: left;
+    font-weight: bold;
+}
+
+.App-pane {
+    /* font-size: large; */
+    padding: 1em;
+    height: 94vh;
+}
+
+.App-left-pane {
+    text-align: left;
+}
+
+.App-right-pane {
+    border-left: #c8c8c8 solid 1px;
+}
+
+.tab-pane {
+    padding: 1em;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.RequestPane ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.tab-pane ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.unassigned-request,
+.unassigned-request h3,
+.unassigned-request button {
+    color: grey;
+}
+
+#user-button-bar {
+    float: right;
+    height: 6vh;
+    padding-right: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.dropdown-menu {
+    min-width: 30px;
+}
+
+h4 {
+    text-align: center;
+    font-weight: bold;
+}
