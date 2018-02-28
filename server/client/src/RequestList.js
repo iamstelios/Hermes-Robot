@@ -1,27 +1,48 @@
 import React, {Component} from 'react'
-import Request from './Request'
+import {Alert} from 'react-bootstrap'
+import {Request, RefetchProcessingRequest} from './Request'
+import {connect} from "react-refetch";
 
 class RequestList extends Component {
-    componentDidUpdate(prevProps, prevState) {
-        const curListIds = this.props.list.map(req => req.id);
-        const prevListIds = prevProps.list.map(req => req.id);
-        const removedIds = prevListIds.filter(n => curListIds.indexOf(n) === -1);
-        for (var id in removedIds) {
-            if (removedIds.hasOwnProperty(id)) {
-                fetch(`/api/requests/${id}`).then(results => results.json()).then(data => {
-                });
-            }
-        }
+    constructor(props, context) {
+        super(props);
+        this.state = {
+            list: []
+        };
     }
 
     render() {
-        const listItems = this.props.list.map(function (req) {
-            return (<li key={req.id}><Request request={req}/></li>);
-        });
-        return (<ul>
-            {listItems}
-        </ul>)
+        const {requestsFetch, processing} = this.props;
+        if (requestsFetch.pending) {
+            return (<ul></ul>);
+        } else if (requestsFetch.rejected) {
+            return (<ul>
+                <li>
+                    <Alert bsStyle="warning">
+                        <strong>Error:</strong> {requestsFetch.reason}
+                    </Alert>;
+                </li>
+            </ul>);
+        } else if (requestsFetch.fulfilled) {
+            const listItems = requestsFetch.value.map(function (req) {
+                if (processing) {
+                    return (<li key={req.id}><RefetchProcessingRequest request={req}/></li>);
+                } else {
+                    return (<li key={req.id}><Request request={req}/></li>);
+                }
+            });
+            return (<ul>
+                {listItems}
+            </ul>);
+        }
+
     }
 }
 
-export default RequestList;
+export default connect(props => ({
+    requestsFetch: {
+        url: props.apiUrl,
+        refreshInterval: props.refreshInterval
+    }
+}))
+(RequestList)

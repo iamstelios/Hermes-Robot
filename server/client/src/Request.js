@@ -5,9 +5,9 @@ import {
     ProgressBar,
     ButtonGroup
 } from 'react-bootstrap'
-import {withAlert} from 'react-alert'
+import {connect} from "react-refetch";
 
-class Request extends Component {
+export class Request extends Component {
     constructor(props, context) {
         super(props);
     }
@@ -25,34 +25,23 @@ class Request extends Component {
 
     render() {
         var {
+            action,
+            itemCode,
+            dst,
             id,
-            item,
+            src,
+            level,
             title,
-            status,
-            completion,
-            steps
+            completed
         } = this.props.request;
-        var assigned = true;
-        const now = completion / steps * 100;
-        if (status === "unassigned") {
-            assigned = false;
-        } else if (completion === steps) {
-            this.props.alert.success(`Request #${id} Complete`);
-        }
-        const message = `${item.name} (code: ${item.code})`;
-        var panelClass = assigned
-            ? ''
-            : 'unassigned-request';
-        return (<Panel className={panelClass}>
+
+        return (<Panel className={"unassigned-request"}>
             <Panel.Heading>
                 <Panel.Title componentClass="h3">{title}&nbsp;(#{id})
                 </Panel.Title>
             </Panel.Heading>
             <Panel.Body>
-                <p>{message}</p>
-                {assigned && <ProgressBar active="active" striped="striped" bsStyle="info" now={now}
-                                          label={`${completion}/${steps}`}/>}
-                <p>{status}</p>
+                <p>Not yet assigned</p>
                 <ButtonGroup>
                     <Button onClick={() => this.cancelRequest(id)}>Cancel</Button>
                 </ButtonGroup>
@@ -61,4 +50,79 @@ class Request extends Component {
     }
 }
 
-export default withAlert(Request);
+class ProcessingRequest extends Component {
+    constructor(props, context) {
+        super(props);
+    }
+
+    cancelRequest(requestId) {
+        console.log("cancel request: ", requestId);
+        fetch('/api/request/' + requestId, {
+            method: 'delete'
+        })
+            .then(response => response.json())
+            .then(jsonResult => {
+                console.log(jsonResult);
+            });
+    }
+
+    render() {
+        // "id": 4,
+        // "robotId": 1,
+        // "position": "0",
+        // "progress": {
+        //      "currentSteps": 1,
+        //      "totalSteps": 7
+
+        const {requestFetch} = this.props;
+        const {
+            id,
+            robotId,
+            position,
+            progress
+        } = this.props.request;
+
+        console.log(requestFetch);
+        let title = "...";
+        if (requestFetch.fulfilled) {
+            title = requestFetch.value.title;
+        }
+
+        let percentageProgress = 0;
+        let assigned = false;
+        if (progress !== undefined) {
+            assigned = true;
+            percentageProgress = progress.currentSteps / progress.totalSteps * 100;
+        }
+        return (<Panel>
+            <Panel.Heading>
+                <Panel.Title componentClass="h3">{title}&nbsp;(#{id})
+                </Panel.Title>
+            </Panel.Heading>
+            <Panel.Body>
+                <p>{`Assigned to Hermes#${robotId}`}</p>
+                {
+                    assigned &&
+                    <ProgressBar active="active" striped="striped" bsStyle="info" now={percentageProgress}
+                                 label={`${progress.currentSteps}/${progress.totalSteps}`}/>
+                }
+                {
+                    position !== undefined &&
+                    <p>{`Robot is at ${position}`}</p>
+                }
+                <ButtonGroup>
+                    <Button onClick={() => this.cancelRequest(id)}>Cancel</Button>
+                </ButtonGroup>
+            </Panel.Body>
+        </Panel>);
+    }
+}
+
+export const RefetchProcessingRequest = connect(props => ({
+    requestFetch: `/api/requests/${props.request.id}`//,
+    // requestFetch: {
+    //     url: `/api/requests/${props.id}`,
+    //     then: req => `/api/inventory/${req.itemCode}`
+    // }
+}))
+(ProcessingRequest);
