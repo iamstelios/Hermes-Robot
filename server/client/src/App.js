@@ -22,18 +22,7 @@ class App extends Component {
             userId: 1
         };
     }
-
-    cancelRequest(requestId) {
-        console.log("cancel request: ", requestId);
-        fetch('/api/request/' + requestId, {
-            method: 'delete'
-        })
-            .then(response => response.json())
-            .then(jsonResult => {
-                console.log(jsonResult);
-            });
-    }
-
+    
     render() {
         return (<div className="App">
                 <Grid fluid="fluid">
@@ -53,8 +42,7 @@ class App extends Component {
                     <Row className="content">
                         <Col className="App-pane App-left-pane" sm={7} lg={9}>
                             <Tabs defaultActiveKey={1} id="uncontrolled-tab-example">
-                                <Tab eventKey={1} title="Browse Inventory"><Button
-                                    onClick={() => this.cancelRequest(4)}>TEST</Button>
+                                <Tab eventKey={1} title="Browse Inventory">
                                     <Inventory/></Tab>
                                 <Tab eventKey={2} title="Map" disabled="disabled"></Tab>
                             </Tabs>
