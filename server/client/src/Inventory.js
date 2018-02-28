@@ -14,6 +14,7 @@ class Inventory extends Component {
             items: items,
             requestFailed: false
         };
+        this.handleSubmit = this.handleSubmit.bind(this);
     }
 
     componentDidMount() {
@@ -34,20 +35,54 @@ class Inventory extends Component {
                 this.setState({
                     requestFailed: true
                 })
-            })
+            });
     }
 
     handleSubmit(item, e) {
+        // show alert that request is being sent to server
+        this.props.alert.show(`Requesting retrieval of ${item.name}`, {
+            timeout: 2000,
+            type: 'info',
+            code: item.code,
+            onOpen: () => {
+                this.submitRetrieveRequest(item.code);
+            }
+        });
+
+        e.preventDefault();
+    }
+
+    submitRetrieveRequest(itemCode) {
         fetch('/api/requests/', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({action: 'retrieve', item: item, dst: '1'})
-        });
-        this.props.alert.success(`Request #${item.id} submitted`);
-        e.preventDefault();
+            body: JSON.stringify({action: 'retrieve', itemCode: itemCode, dst: '1'})
+        })
+            .then(response => {
+                if (!response.ok) {
+                    this.props.alert.show(`Request Failed`, {
+                        timeout: 2000,
+                        type: 'error',
+                        onOpen: () => {
+                            this.props.alert.alerts.find(a => a.options.code === itemCode).close()
+                        }
+                    });
+                }
+                return response
+            })
+            .then(r => r.json())
+            .then(r => {
+                this.props.alert.show(`Request Submitted (#${r.id})`, {
+                    timeout: 2000,
+                    type: 'success',
+                    onOpen: () => {
+                        this.props.alert.alerts.find(a => a.options.code === itemCode).close()
+                    }
+                });
+            });
     }
 
     render() {
