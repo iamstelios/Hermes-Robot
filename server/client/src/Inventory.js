@@ -11,8 +11,30 @@ class Inventory extends Component {
     constructor(props, context) {
         super(props);
         this.state = {
-            items: items
+            items: items,
+            requestFailed: false
         };
+    }
+
+    componentDidMount() {
+        fetch('/api/inventory')
+            .then(response => {
+                if (!response.ok) {
+                    throw Error("Network request failed")
+                }
+
+                return response
+            })
+            .then(r => r.json())
+            .then(r => {
+                this.setState({
+                    items: r
+                })
+            }, () => {
+                this.setState({
+                    requestFailed: true
+                })
+            })
     }
 
     handleSubmit(item, e) {
