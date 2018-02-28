@@ -10,16 +10,21 @@ import {connect} from "react-refetch";
 export class Request extends Component {
     constructor(props, context) {
         super(props);
+        this.state = {
+            cancelling: false
+        };
+        // this.cancelRequest = this.cancelRequest.bind(this);
     }
 
     cancelRequest(requestId) {
         console.log("cancel request: ", requestId);
-        fetch('/api/request/' + requestId, {
+        fetch('/api/requests/' + requestId, {
             method: 'delete'
         })
             .then(response => response.json())
             .then(jsonResult => {
                 console.log(jsonResult);
+                this.setState({cancelling: true});
             });
     }
 
@@ -53,16 +58,21 @@ export class Request extends Component {
 class ProcessingRequest extends Component {
     constructor(props, context) {
         super(props);
+        this.state = {
+            cancelling: false
+        };
+        // this.cancelRequest = this.cancelRequest.bind(this);
     }
 
     cancelRequest(requestId) {
         console.log("cancel request: ", requestId);
-        fetch('/api/request/' + requestId, {
+        fetch('/api/requests/' + requestId, {
             method: 'delete'
         })
             .then(response => response.json())
             .then(jsonResult => {
                 console.log(jsonResult);
+                this.setState({cancelling: true});
             });
     }
 
@@ -82,7 +92,6 @@ class ProcessingRequest extends Component {
             progress
         } = this.props.request;
 
-        console.log(requestFetch);
         let title = "...";
         if (requestFetch.fulfilled) {
             title = requestFetch.value.title;
@@ -94,6 +103,13 @@ class ProcessingRequest extends Component {
             assigned = true;
             percentageProgress = progress.currentSteps / progress.totalSteps * 100;
         }
+        let style = "info";
+        let message = `Robot is at ${position}`;
+        if (this.state.cancelling) {
+            style = "danger";
+            message = "Cancelling";
+        }
+        console.log(this.state);
         return (<Panel>
             <Panel.Heading>
                 <Panel.Title componentClass="h3">{title}&nbsp;(#{id})
@@ -103,12 +119,12 @@ class ProcessingRequest extends Component {
                 <p>{`Assigned to Hermes#${robotId}`}</p>
                 {
                     assigned &&
-                    <ProgressBar active="active" striped="striped" bsStyle="info" now={percentageProgress}
+                    <ProgressBar active="active" striped="striped" bsStyle={style} now={percentageProgress}
                                  label={`${progress.currentSteps}/${progress.totalSteps}`}/>
                 }
                 {
                     position !== undefined &&
-                    <p>{`Robot is at ${position}`}</p>
+                    <p>{message}</p>
                 }
                 <ButtonGroup>
                     <Button onClick={() => this.cancelRequest(id)}>Cancel</Button>

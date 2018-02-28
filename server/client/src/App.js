@@ -22,7 +22,7 @@ class App extends Component {
             userId: 1
         };
     }
-    
+
     render() {
         return (<div className="App">
                 <Grid fluid="fluid">
