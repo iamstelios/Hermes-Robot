@@ -16,7 +16,6 @@ function lookupRequest(req, res, next) {
 // Return all the requests (history and current)
 requestRouter.get('/', function (req, res) {
     var user = req.query.user;
-    console.log("user: %s",user);
     var requests = storage.getItemSync("requests");
     if(user !== undefined){
         // Only the ones that are affect the user
@@ -123,7 +122,6 @@ requestRouter.get('/processing', function (req, res) {
     res.send(processingRequests);
     /*
     var user = req.query.id;
-    console.log("user: %s",user);
     if(user !== 'undefined'){
         // Only the ones that are affect the user
         var requests = processingRequests.filter(function (request) {
@@ -159,7 +157,6 @@ requestRouter.get('/processing/:id', function (req, res) {
 // Send the requests that wait in the queue
 requestRouter.get('/active', function (req, res) {
     var user = req.query.user;
-    console.log("user: %s",user);
     if(user !== undefined){
         // Only the ones that are affect the user
         var requests = activeRequests.filter(function (request) {
