@@ -5,13 +5,12 @@ import {
 } from 'react-bootstrap'
 import {withAlert} from 'react-alert'
 import './App.css'
-import {items} from './Globals'
 
 class Inventory extends Component {
     constructor(props, context) {
         super(props);
         this.state = {
-            items: items,
+            inventory: [],
             requestFailed: false
         };
         this.handleSubmit = this.handleSubmit.bind(this);
@@ -29,12 +28,13 @@ class Inventory extends Component {
             .then(r => r.json())
             .then(r => {
                 this.setState({
-                    items: r
-                })
+                    inventory: r
+                });
+
             }, () => {
                 this.setState({
                     requestFailed: true
-                })
+                });
             });
     }
 
@@ -86,7 +86,7 @@ class Inventory extends Component {
     }
 
     render() {
-        const listItems = this.state.items.map((item) => {
+        const listItems = this.state.inventory.map((item) => {
             return (<li key={item.code}>
                 <Panel bsStyle="primary">
                     <Panel.Heading>
