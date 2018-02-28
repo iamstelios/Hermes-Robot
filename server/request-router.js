@@ -15,9 +15,28 @@ function lookupRequest(req, res, next) {
 
 // Return all the requests (history and current)
 requestRouter.get('/', function (req, res) {
-    res.send(storage.getItemSync("requests"));
+    var user = req.query.user;
+    var requests = storage.getItemSync("requests");
+    if(user !== undefined){
+        // Only the ones that are affect the user
+        requests = requests.filter(function (request) {
+            switch (request.action) {
+                case "retrieve":
+                    return request.dst === user;
+                case "store":
+                    return request.src === user;
+                case "transfer":
+                    return request.src === user || request.dst === user;
+                default:
+                    return false;
+            }
+        })
+        res.send(requests);
+    }else{
+        // All the requests
+        res.send(requests);
+    }
 });
-
 
 // Add another request
 requestRouter.post('/', function (req, res) {
@@ -101,6 +120,27 @@ requestRouter.delete('/:id', lookupRequest, function (req, res) {
 // Send all the currently processed requests
 requestRouter.get('/processing', function (req, res) {
     res.send(processingRequests);
+    /*
+    var user = req.query.id;
+    if(user !== 'undefined'){
+        // Only the ones that are affect the user
+        var requests = processingRequests.filter(function (request) {
+            switch (request.action) {
+                case "retrieve":
+                    return request.dst === user;
+                case "store":
+                    return request.src === user;
+                case "transfer":
+                    return request.src === user || request.dst === user;
+                default:
+                    return false;
+            }
+        })
+        res.send(requests)
+    }else{
+        res.send(processingRequests);
+    }
+    */
 });
 
 // Send back the process progress of the request queried
@@ -114,9 +154,32 @@ requestRouter.get('/processing/:id', function (req, res) {
     }
 });
 
-// Send all the requests that wait in the queue
+// Send the requests that wait in the queue
 requestRouter.get('/active', function (req, res) {
-    res.send(activeRequests);
+    var user = req.query.user;
+    if(user !== undefined){
+        // Only the ones that are affect the user
+        var requests = activeRequests.filter(function (request) {
+            switch (request.action) {
+                case "retrieve":
+                    return request.dst === user;
+                case "store":
+                    return request.src === user;
+                case "transfer":
+                    return request.src === user || request.dst === user;
+                default:
+                    return false;
+            }
+        })
+        res.send(requests);
+    }else{
+        // All the requests
+        res.send(activeRequests);
+    }
 });
 
+// Get a request by id
+requestRouter.get('/:id',lookupRequest, function(req,res){
+    res.send(storage.getItemSync("requests")[req.requestIndex]);
+});
 module.exports = requestRouter;
