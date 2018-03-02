@@ -327,6 +327,7 @@ def handler(ip):
                         #Continue the operation                    
                         new_position, totalInstructions, currentInstruction = gen.send(cancelled)
                     except StopIteration:
+                        #TODO: Check if this can be removed
                         if not cancelled:
                             break
                         else:
