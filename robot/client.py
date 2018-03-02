@@ -305,7 +305,10 @@ def handler(ip):
                         status = {
                             "status" : "Position and queue progress update",
                             "position" : new_position, #String
-                            "progress" : [currentInstruction,totalInstructions] #Integers
+                            "progress" : {
+                                            "currentSteps" : currentInstruction,
+                                            "totalSteps" : totalInstructions #Integers
+                            }
                         }
                         yield from websocket.send(json.dumps(status))
                         print("> {}".format(status))

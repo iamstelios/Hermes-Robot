@@ -1,10 +1,12 @@
 {
-  "name": "server-full",
+  "name": "server",
   "version": "1.0.0",
   "scripts": {
-    "client": "cd client && yarn start",
+    "client": "cd client && npm start",
     "server": "node server.js",
-    "dev": "concurrently --kill-others-on-fail \"yarn server\" \"yarn client\""
+    "server-persist": "node server.js persist",
+    "dev": "concurrently --kill-others-on-fail \"yarn server\" \"yarn client\"",
+    "dev-persist": "concurrently --kill-others-on-fail \"yarn server-persist\" \"yarn client\""
   },
   "dependencies": {
     "body-parser": "^1.18.2",
