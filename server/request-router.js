@@ -102,19 +102,21 @@ requestRouter.delete('/:id', lookupRequest, function (req, res) {
             // Need to change completed to cancelled
             val[req.requestIndex].completed = "cancelled";
             // Remove from active queue
-            var index = activeRequests.findIndex(function (request) {
-                return request.id === req.params.id;
-            });
+            var index = activeRequests.findIndex(request => request.id == req.params.id);
             if (index > -1) {
                 activeRequests.splice(index, 1);
-                console.log("Cancelled request removed from active queue")
+                console.log("Cancelled request removed from active queue");
             } else {
-                console.log("Cancelled request is being executed now")
+                console.log("Cancelled request is being executed now");
             }
+        }else{
+                console.log("Cancelled request is already completed");
+                res.statusCode = 400;
+                res.json({errors: ["Request already completed"]});
         }
-        return val;
+        return val
     });
-    res.send();
+    res.send()
 });
 
 // Send all the currently processed requests
