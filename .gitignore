@@ -73,3 +73,6 @@ typings/
 
 # python
 __pycache__/
+
+# intellij
+.idea/
