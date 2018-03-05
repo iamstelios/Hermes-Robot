@@ -110,9 +110,9 @@ requestRouter.delete('/:id', lookupRequest, function (req, res) {
                 console.log("Cancelled request is being executed now");
             }
         }else{
-                console.log("Cancelled request is already completed");
+                console.log("Cancelled request is already completed or cancelled");
                 res.statusCode = 400;
-                res.json({errors: ["Request already completed"]});
+                res.json({errors: ["Request already completed or cancelled"]});
         }
         return val
     });
