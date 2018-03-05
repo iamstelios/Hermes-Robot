@@ -10,7 +10,21 @@ from collections import deque
 #Import sub instructions
 from subinstruction import *
 
+#================= HARDCODED MAP =====================
+
+#r for red, g for green, b for blue, y for yellow
 bases = set([0])
+
+optimal_routes = [['b','r','g','g'],['y','y','b','r']]
+
+endpoint_junction_connection = ['J0','J0','J1','J1']
+
+junction_endpoints = [
+    {"r": "1", "g": "J1", "b":"0"},
+    {"r": "3", "b":"2","y":"J0"},
+    ]
+
+#=================== MAP END =========================
 
 class Position:
     def __init__(self,string):
@@ -37,20 +51,6 @@ class Position:
 #Robot should be started at the 0 base
 #Position "0" is the base
 last_pos = Position("0")
-
-#================= HARDCODED MAP =====================
-
-#r for red, g for green, b for blue, y for yellow
-optimal_routes = [['b','r','g','g'],['y','y','b','r']]
-
-endpoint_junction_connection = ['J0','J0','J1','J1']
-
-junction_endpoints = [
-    {"r": "1", "g": "J1", "b":"0"},
-    {"r": "3", "b":"2","y":"J0"},
-    ]
-
-#=================== MAP END =========================
 
 def class_name(instance):
     return instance.__class__.__name__
