@@ -119,30 +119,36 @@ requestRouter.delete('/:id', lookupRequest, function (req, res) {
     res.send()
 });
 
+function requestIdsByUser(user){
+    var requests = storage.getItemSync("requests");
+    // Only the ones that are affect the user
+    var requests = requests.filter(function (request) {
+        switch (request.action) {
+            case "retrieve":
+                return request.dst === user;
+            case "store":
+                return request.src === user;
+            case "transfer":
+                return request.src === user || request.dst === user;
+            default:
+                return false;
+        }
+    })
+
+    return requests.map(request => request.id);
+}
+
 // Send all the currently processed requests
-requestRouter.get('/processing', function (req, res) {
-    res.send(processingRequests);
-    /*
-    var user = req.query.id;
-    if(user !== 'undefined'){
-        // Only the ones that are affect the user
-        var requests = processingRequests.filter(function (request) {
-            switch (request.action) {
-                case "retrieve":
-                    return request.dst === user;
-                case "store":
-                    return request.src === user;
-                case "transfer":
-                    return request.src === user || request.dst === user;
-                default:
-                    return false;
-            }
-        })
-        res.send(requests)
+requestRouter.get('/processing', function (req, res) {    
+    var user = req.query.user;
+    
+    if(user !== undefined){
+        var processingRequestsByUser = processingRequests.filter(request => requestIdsByUser(user).includes(request.id));
+        res.send(processingRequestsByUser);
     }else{
         res.send(processingRequests);
     }
-    */
+
 });
 
 // Send back the process progress of the request queried
