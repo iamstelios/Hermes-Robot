@@ -2,6 +2,7 @@
 
 #---------FOR PRESENTATION--------------
 from time import sleep
+from demo import *
 wait_time = 4
 #---------------------------------------
 
@@ -20,10 +21,11 @@ class Move(SubInstruction):
 
     # If node B is a junction, the robot should stop before entering the juction
     # Thus if the opposite is needed no exit input is needed to reach back node A.
-    def __init__(self, nodeA, nodeB, exit=None):
+    def __init__(self, nodeA, nodeB, exit=None, fake=False):
         from client import Position
         self.nodeA = nodeA
         self.nodeB = nodeB
+        self.fake = fake
         if exit is not None:
             self.exit = exit
             self.junctionExit = True
@@ -35,11 +37,12 @@ class Move(SubInstruction):
         # if robot is at the start of node A and it is a junction!
         print('Moving from %s to %s' % (self.nodeA.string, self.nodeB.string))
 
-        #TODO: WRITE CODE FOR MOVEMENT HERE!
-        sleep(wait_time)
+        if not self.fake:
+            demo()
+
         print('Arrived at %s' % self.nodeB.string)
         return self.nodeB
-    
+
     def opposite(self):
         from client import junction_endpoints
         new_exit = None
@@ -48,7 +51,7 @@ class Move(SubInstruction):
             # r for red, g for green, b for blue, y for yellow
             new_exit = [colour for colour, node in junction_endpoints[
                 self.nodeB.number].items() if node == self.nodeA.string][0]
-        return Move(self.nodeB,self.nodeA,new_exit)
+        return Move(self.nodeB,self.nodeA,new_exit,fake=True)
 
 class Reverse(SubInstruction):
     # Reverses the position of the robot 180 degrees
