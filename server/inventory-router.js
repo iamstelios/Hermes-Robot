@@ -2,12 +2,14 @@ var express = require('express');
 var storage = require('./storage');
 var inventoryRouter = express.Router();
 
+const MAX_LEVELS = 3;
+
 // Finds the Index of the item in the inventory from its id
 function lookupItem(req, res, next) {
     const itemIndex = storage.getItemSync("inventory").findIndex(item => item.code == req.params.id);
     if (itemIndex == -1) {
         res.statusCode = 404;
-        return res.json({errors: ["Item not found"]});
+        return res.json({ errors: ["Item not found"] });
     }
     req.itemIndex = itemIndex;
     next();
@@ -17,12 +19,31 @@ function lookupItem(req, res, next) {
 inventoryRouter.get('/', function (req, res) {
     res.send(storage.getItemSync("inventory"));
 });
+
 // Save an array of items
 inventoryRouter.put('/', function (req, res) {
     storage.setItemSync("inventory", req.body.inventory);
     storage.setItemSync("lastInvId", req.body.lastCode);
     res.send(req.body);
 });
+
+// Returns an empty location to be reserved
+function findEmptyLocation() {
+    var inventory = storage.getItemSync("inventory");
+    for(let base of bases){
+        for (level = 1; level <= MAX_LEVELS; level++) {
+            var itemsInPosition = inventory.filter(item => item.location == base && item.level == level);
+            if (itemsInPosition.length == 0) {
+                return {
+                    "location" : base,
+                    "level": level
+                };
+            }
+        }
+    };
+    return undefined;
+}
+
 // Save a single item
 inventoryRouter.post('/', function (req, res) {
     // Calculate the id to be assigned to the request
@@ -31,6 +52,27 @@ inventoryRouter.post('/', function (req, res) {
     });
     var item = req.body;
     item.code = id;
+    // Check who made the request (user / admin)
+    var requestor = req.get('Requestor');
+    if (requestor == "user") {
+        console.log("Inventory post made by user");
+        item.inStorage = false;
+        var emptyLocation = findEmptyLocation();
+        if(emptyLocation !== undefined){
+            item.location = emptyLocation.location;
+            item.level = emptyLocation.level;
+        }else{
+            return res.json({ errors: ["All bases are full, cannot store new items"] });
+        }
+    } else if (requestor == "admin") {
+        console.log("Inventory post made by admin");
+        item.inStorage = true;
+    } else {
+        console.log("Bad inventory post");
+        res.statusCode = 400;
+        return res.json({ errors: ["Bad defined inventory post"] });
+    }
+
     // Add the item in the end of the inventory
     var inventory = storage.mutate("inventory", function (val) {
         val.push(item);

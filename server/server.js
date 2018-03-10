@@ -10,6 +10,22 @@ var app = express();
 
 var port = process.env.PORT || 8080;
 
+//================= HARDCODED MAP =====================
+
+//r for red, g for green, b for blue, y for yellow
+bases = [0];
+
+optimal_routes = [['b','r','g','g'],['y','y','b','r']];
+
+endpoint_junction_connection = ['J0','J0','J1','J1'];
+
+junction_endpoints = [
+    {"r": "1", "g": "J1", "b":"0"},
+    {"r": "3", "b":"2","y":"J0"},
+    ];
+
+//=================== MAP END =========================
+
 if (process.argv[2] !== "persist") {
     // Persistent storage clear
     console.log("Clearing local storage...");
@@ -58,6 +74,23 @@ activeRequests = [];
 // Used for position and queue progress updates
 processingRequests = [];
 
+function updateInStorageStatus(request, notCancelled){
+    // Update the inStorage status of the item of the request
+    if(request.action == "retrieve"){
+        storage.mutate("inventory", function (inventory) {
+            const itemIndex = inventory.findIndex(item => item.code == request.itemCode);
+            inventory[itemIndex].inStorage = !notCancelled;
+            return inventory;
+        });
+    }else if(request.action == "store"){
+        storage.mutate("inventory", function (inventory) {
+            const itemIndex = inventory.findIndex(item => item.code == request.itemCode);
+            inventory[itemIndex].inStorage = notCancelled;
+            return inventory;
+        });
+    }
+}
+
 // Set a request as completed
 function setComplete(requestId) {
     if (requestId < 0) {
@@ -66,11 +99,16 @@ function setComplete(requestId) {
     }
     // Changes completed property in request history
     const requestIndex = storage.getItemSync("requests").findIndex(request => request.id == requestId);
-    storage.mutate("requests", val => {
-        if (val[requestIndex].completed != "cancelled") {
-            val[requestIndex].completed = "completed";
+    storage.mutate("requests", requests => {
+        if (requests[requestIndex].completed != "cancelled") {
+            requests[requestIndex].completed = "completed";
+        }else{
+            // Request was cancelled
+            // Revert the inStorage status of the item of the request
+            var request = requests[requestIndex];
+            updateInStorageStatus(request,false);
         }
-        return val;
+        return requests;
     });
 
     // Removes the request from the processingRequests list
@@ -104,11 +142,13 @@ wss.on('connection', function connection(ws) {
             setComplete(ws.processRequestId);
 
             if (activeRequests.length > 0) {
-                var instruction = activeRequests.shift();
-                ws.send(JSON.stringify(instruction));
-                console.log('send: %s', JSON.stringify(instruction));
+                var request = activeRequests.shift();
+                updateInStorageStatus(request,true);
+
+                ws.send(JSON.stringify(request));
+                console.log('send: %s', JSON.stringify(request));
                 //Save the id for later use
-                ws.processRequestId = instruction.id;
+                ws.processRequestId = request.id;
                 //Add the request to the processing list
                 processingRequests.push({ "id": ws.processRequestId, "robotId": ws.robotId });
             } else {
@@ -147,3 +187,5 @@ wss.on('connection', function connection(ws) {
     });
 
 });
+
+module.exports.updateInStorageStatus = updateInStorageStatus; 

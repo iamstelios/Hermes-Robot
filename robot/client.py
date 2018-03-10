@@ -292,6 +292,7 @@ def handler(ip):
                 "status" : "Requesting new instruction"
             }
             yield from websocket.send(json.dumps(status))
+            print()
             print("> {}".format(status))
 
             instruction_raw = yield from websocket.recv()

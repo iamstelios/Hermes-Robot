@@ -1,6 +1,7 @@
 var express = require('express');
 var storage = require('./storage');
 var requestRouter = express.Router();
+const server = require('./server');
 
 // Finds the Index of the item in the inventory from its id
 function lookupRequest(req, res, next) {
@@ -80,18 +81,19 @@ requestRouter.post('/', function (req, res) {
     });
 
     if (idleRobotIds.length > 0) {
+        server.updateInStorageStatus(request,true);
         // Assign the instruction to the first robot available
         var robotId = idleRobotIds.shift();
         var index =  robots.findIndex(ws => ws.robotId == robotId);
         robots[index].processRequestId = request.id;
         robots[index].send(JSON.stringify(request));
+        console.log('send: %s', JSON.stringify(request));
         processingRequests.push({"id": robots[index].processRequestId, "robotId": robots[index].robotId})
         
     } else {
         // No robot available -> add to queue
         activeRequests.push(request) // Doesn't need completed option
     }
-
     res.send(request);
 });
 
@@ -119,6 +121,7 @@ requestRouter.delete('/:id', lookupRequest, function (req, res) {
     res.send()
 });
 
+// Return the request ids that are made by the given user
 function requestIdsByUser(user){
     var requests = storage.getItemSync("requests");
     // Only the ones that are affect the user
