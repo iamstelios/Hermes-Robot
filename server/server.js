@@ -70,9 +70,20 @@ idleRobotIds = [];
 nextRobotId = 1;
 // Queue of active requests not being processed
 activeRequests = [];
-// List of request that are currently being processed
+// List of requests that are currently being processed
 // Used for position and queue progress updates
 processingRequests = [];
+
+function retrieveInStorageStatus(request){
+    // Return the inStorage property of the item if it's a retrieve instruction
+    // Returns true if not a retrieve instruction
+    if(request.action == "retrieve"){
+        const inventory = storage.getItemSync("inventory");
+        const itemIndex = inventory.findIndex(item => item.code == request.itemCode);
+        return inventory[itemIndex].inStorage;
+    }
+    return true;
+}
 
 function updateInStorageStatus(request, notCancelled){
     // Update the inStorage status of the item of the request
@@ -143,8 +154,27 @@ wss.on('connection', function connection(ws) {
 
             if (activeRequests.length > 0) {
                 var request = activeRequests.shift();
+                if (!retrieveInStorageStatus(request)){
+                    // Request needs to wait for the item to become available
+                    // Find a request that can be processed
+                    var foundAnotherRequest = false;
+                    for(var index; index<activeRequests.length; index++){
+                        if(retrieveInStorageStatus(activeRequests[index])){
+                            foundAnotherRequest = true;
+                            request = activeRequests[index];
+                            // Remove the request from the active request list
+                            activeRequests.splice(index,1);
+                            break;
+                        }
+                    }
+                    if(!foundAnotherRequest){
+                        // No instruction in the queue can be processed
+                        idleRobotIds.push(ws.robotId);
+                        console.log(`Robot with id: ${ws.robotId} added to the idle list`);
+                        break;
+                    }
+                }
                 updateInStorageStatus(request,true);
-
                 ws.send(JSON.stringify(request));
                 console.log('send: %s', JSON.stringify(request));
                 //Save the id for later use
@@ -189,3 +219,4 @@ wss.on('connection', function connection(ws) {
 });
 
 module.exports.updateInStorageStatus = updateInStorageStatus; 
+module.exports.retrieveInStorageStatus = retrieveInStorageStatus;

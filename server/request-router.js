@@ -80,7 +80,8 @@ requestRouter.post('/', function (req, res) {
         return val;
     });
 
-    if (idleRobotIds.length > 0) {
+    if (idleRobotIds.length > 0 && server.retrieveInStorageStatus(request)) {
+
         server.updateInStorageStatus(request,true);
         // Assign the instruction to the first robot available
         var robotId = idleRobotIds.shift();
@@ -91,8 +92,8 @@ requestRouter.post('/', function (req, res) {
         processingRequests.push({"id": robots[index].processRequestId, "robotId": robots[index].robotId})
         
     } else {
-        // No robot available -> add to queue
-        activeRequests.push(request) // Doesn't need completed option
+        // No robot available or request needs to wait for an item -> add to queue
+        activeRequests.push(request);
     }
     res.send(request);
 });
