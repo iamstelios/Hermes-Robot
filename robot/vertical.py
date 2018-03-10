@@ -9,26 +9,32 @@ class LiftPos(IntEnum):
     BOTTOM = 0
     TOP = 100
 
-    SHELF_0 = 16
-    SHELF_0_UP = 32
+    SHELF_0 = 5
+    SHELF_0_UP = 29
     SHELF_1 = 51
     SHELF_1_UP = 65
     SHELF_2 = 83
     SHELF_2_UP = 95
 
 """
-Given a lift position either returns a pair of
-(Reed switch number, height range) if there is
-a sensor at that location or None if there isn't one.
+Given a lift position either returns the Reed switch number
+if there is a sensor at that location or None if there isn't one.
 """
 # TODO add more sensors
 def get_reed_id(loc):
+    return None
     if loc == LiftPos.SHELF_0:
-        return (0, int(TOP_MOTOR_POS/3))
+        return 0
     elif loc == LiftPos.SHELF_0_UP:
-        return (1, int(TOP_MOTOR_POS/8))
+        return 1
     elif loc == LiftPos.SHELF_1:
-        return (2, int(TOP_MOTOR_POS/4))
+        return 2
+    if loc == LiftPos.SHELF_1_UP:
+        return 3
+    elif loc == LiftPos.SHELF_2:
+        return 4
+    elif loc == LiftPos.SHELF_2_UP:
+        return 5
     else:
         return None
 
@@ -67,48 +73,100 @@ class VerticalMovementManager:
         self._sensors = ArduinoSensorsManager()
 
     """
+    Sets the stored position of the lift. Useful when it was moved
+    manually or fell.
+    """
+    def set_position(self, pos):
+        self._pkl_position = pos
+
+    """
+    Moves in steps of the specified size for as long as the given condition evalutes to True. An
+    optional maximum distance in motor units can be specified. Makes sure not to go outside of the
+    valid position range. Returns the moved distance in motor units or None if the motor was stalled.
+    Doesn't update the stored position.
+    """
+    def _move_while(self, cond, step = 10, max = None):
+        init_pos = self._motor.position
+
+        while cond():
+            self._motor.run_to_rel_pos(position_sp = step)
+
+            while self._motor.is_running and cond():
+                # Make sure motor doesn't stall;
+                if self._motor.is_stalled:
+                    self._motor.stop()
+                    return None
+
+                diff = self._motor.position - init_pos
+                new_pos = self._pkl_position + motor_to_percent(diff)
+
+                # Bound distance travelled within the given value if specified
+                # and position within percentage range
+                if (max != None and diff >= max)
+                or (new_pos == 0 or new_pos == 100):
+                    self._motor.stop()
+                    return diff
+
+            self._motor.stop()
+
+        return self._motor.position - init_pos
+
+    """
     Assuming the lift is close to the given Reed switch, tries
     to position the lift in the middle of the switch.
     reed - (Reed switch number, height range)
     """
     def move_to_switch(self, reed):
         # Size of the range to scan for switches in motor units
-        diff = reed[1]
+        diff = 500
 
-        init_pos_m = self._motor.position
+        init_pos = self._motor.position
 
-        # We began in middle of range to scan, so first go up halfway
-        self._motor.run_to_rel_pos(position_sp = int(diff/2))
-        self._motor.wait_until_not_moving()
-
-        # Motor positions at top and bottom of range where the switch
-        # is visible
-        top = 0
-        bot = 1e10
-
-        # Do a sweep down and then back up
-        for _ in range(0, 2):
-            diff = -diff
-            self._motor.run_to_rel_pos(position_sp = diff)
-
-            while self._motor.is_running and not self._motor.is_stalled:
-                if self._sensors.read_reed(reed[0]):
-                    # Expand the visibility range as far as possible
-                    top = max(top, self._motor.position)
-                    bot = min(bot, self._motor.position)
-
-            self._motor.wait_until_not_moving(timeout=500)
-
-        if top != 0 and bot != 1e10:
-            # Move to middle of switch visibility range
-            self._motor.run_to_abs_pos(position_sp = int((top + bot) / 2))
+        def run(n):
+            self._motor.run_to_rel_pos(position_sp = n)
             self._motor.wait_until_not_moving()
+
+        see_mag = lambda: self._sensors.read_reed(reed)
+
+        if see_mag():
+            # We start on a peak, go up to find valley
+            self._move_while(see_mag, 5)
+
+            # Now we reached either the center or one of the sides
+            # TODO on top sensor this fails probably
+            mvd = self._move_while(lambda: not see_mag(), 5, diff)
+
+            if mvd == diff:
+                # We moved far, so it's probably not the center but rather one of the sides,
+                # go back until we see the center
+                run(-mvd - 10)
+                self._move_while(see_mag, -5)
+            else:
+                # We didn't move far, so this is the center
+                pass
         else:
-            # We failed to find a switch, move back to initial position
-            self._motor.run_to_abs_pos(position_sp = init_pos_m)
+            # We are in a valley or in the center
+
+            # Go up until either we see magnet or go too far
+            # TODO on top sensor this fails probably
+            mvd = self._move_while(lambda: not see_mag(), 5, diff)
+
+            if mvd == diff:
+                # We moved far, so this is one of the sides
+                run(-mvd)
+
+                # Go down until we see the first peak
+                self._move_while(lambda: not see_mag(), -5)
+
+                # Scale the peak and get to center
+                self._move_while(see_mag, -5)
+
+            else:
+                # We didn't go far, so this is the center
+                pass
 
         # Store the new position
-        self._pkl_position += motor_to_percent(self._motor.position - init_pos_m)
+        self._pkl_position += motor_to_percent(self._motor.position - init_pos)
 
     """ Moves the lift to the specified percentage position. """
     def move_to(self, pos):
@@ -131,10 +189,3 @@ class VerticalMovementManager:
             reed = get_reed_id(pos)
             if reed is not None:
                 self.move_to_switch(reed)
-
-    """
-    Sets the stored position of the lift. Useful when it was moved
-    manually or fell.
-    """
-    def set_position(self, pos):
-        self._pkl_position = pos

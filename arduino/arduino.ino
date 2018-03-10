@@ -1,5 +1,5 @@
 // Array of pins on which Reed switches are.
-int reedSwitches[] = { 5, 6, 7 };
+int reedSwitches[] = { 7, 6, 5, 4, 3, 2 };
 
 void setup() {
   // Initialize serial communication at 9600 bits per second
