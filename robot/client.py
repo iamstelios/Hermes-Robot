@@ -27,6 +27,8 @@ junction_endpoints = [
 #=================== MAP END =========================
 
 class Position:
+    def __str__(self):
+        return self.string
     def __init__(self,string):
         self.string = string
         junction_pattern = re.compile("^J\d+$")
@@ -204,12 +206,14 @@ def queueProcessor(queue, uncancellableQueue = deque()):
         if position_change is not None:
             last_pos = position_change
         # poll server for cancellation and update position
-        cancelled = (yield last_pos.string, totalInstructions, totalInstructions-len(queue)-len(uncancellableQueue))
-
+        cancelled = (yield last_pos.string, totalInstructions, 
+            totalInstructions-len(queue)-len(uncancellableQueue))
+    
     # Loop until instruction queue is empty
     while queue and not cancelled:
         # Dequeue sub instruction
         subInstruction = queue.popleft()
+        print('Subinstruction: %s' % subInstruction)
         # Add reverse instruction to the reverse stack
         reverseStack.append(subInstruction.opposite())
         # Run instruction dequeued
@@ -217,7 +221,8 @@ def queueProcessor(queue, uncancellableQueue = deque()):
         if position_change is not None:
             last_pos = position_change
         # poll server for cancellation
-        cancelled = (yield last_pos.string, totalInstructions, totalInstructions-len(queue)-len(uncancellableQueue))
+        cancelled = (yield last_pos.string, totalInstructions, 
+            totalInstructions-len(queue)-len(uncancellableQueue))
 
     # if cancelled then run reverse stack and confirm to server
     firstMovement = True
@@ -225,6 +230,7 @@ def queueProcessor(queue, uncancellableQueue = deque()):
     while cancelled and reverseStack:
         # Pop sub instruction
         subInstruction = reverseStack.pop()
+        print('Subinstruction: %s' % subInstruction)
         if class_name(subInstruction) == "Move" and firstMovement:
             # Reverse the robot to face the new path
             Reverse().run()
