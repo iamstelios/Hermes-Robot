@@ -39,6 +39,15 @@ requestRouter.get('/', function (req, res) {
     }
 });
 
+// Returns the id of the store request that wait for the item with the given item code
+function requestOfItem(itemCode){
+    var filteredRequests = activeRequests.filter(req => req.itemCode == itemCode && req.action == "retrieve");
+    if(filteredRequests[0]!== undefined){
+        return filteredRequests[0].id;
+    }
+    return undefined;
+}
+
 // Add another request
 requestRouter.post('/', function (req, res) {
     var id = storage.mutate("lastReqId", val => val + 1);
@@ -64,9 +73,30 @@ requestRouter.post('/', function (req, res) {
             request.level = item.level; 
             request.title = "Retrieve " + item.name + " from store " + request.src;
         }else if(request.action == "store"){
-            request.dst = item.location;
-            request.level = item.level; 
-            request.title = "Store " + item.name + " to store " + request.src;
+            // Check if another request waits for the storing item
+            var idOfWaitingRequest = requestOfItem(request.itemCode);
+            if(idOfWaitingRequest !== undefined){
+                // Another request waits for that item
+                var indexOfWaitingRequest = activeRequests.findIndex(x => x.id == idOfWaitingRequest);
+                var waitingRequest = activeRequests[indexOfWaitingRequest];
+
+                // Remove the retrieve request from the active and requests lists
+                activeRequests.splice(indexOfWaitingRequest,1);
+                const requestIndex = storage.getItemSync("requests").findIndex(x => x.id == idOfWaitingRequest);
+                storage.mutate("requests",function(requests){
+                    requests.splice(requestIndex,1)
+                    return requests;
+                });                
+
+                // Change the request to transfer
+                request.action = "transfer";
+                request.dst = waitingRequest.dst;
+                delete request.itemCode;
+            }else{
+                request.dst = item.location;
+                request.level = item.level; 
+                request.title = "Store " + item.name + " to store " + request.src;
+            }
         }else{
             res.statusCode = 400;
             return res.json({errors: ["Bad defined request"]});
