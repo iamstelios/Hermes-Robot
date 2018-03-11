@@ -79,12 +79,18 @@ def pathCalculator(source, destination):
 # All instructions executed with robot without holding a box 
 # and facing junction (all workstation connected to a junction!)
 
+class alreadyInPlaceException(Exception):
+    def __init__(self, message):
+        self.message = message 
+
 def go(dst):
     #Robot moves to the destination (faces away from junction and into the node!!)
     print("Instruction: go(%s)" % dst)
     destination = Position(dst)
+    if(destination.equals(last_pos)):
+        raise alreadyInPlaceException("Robot already in place requested to go")
     if destination.isJunction :
-        return Exception("Go destination cannot be a junction")
+        raise Exception("Go destination cannot be a junction")
     subQueue = pathCalculator(last_pos, destination)
     
     cancelled = yield from queueProcessor(subQueue)
@@ -303,10 +309,13 @@ def handler(ip):
             else:
                 instruction = json.loads(instruction_raw)
                 cancelled = False
-                #Generator that yield current position and is send the cancellation
+                #Generator that yields current position and is sending the cancellation
                 gen= action_caller(instruction)
-                #for new_position in gen:
-                new_position, totalInstructions, currentInstruction = next(gen)
+                try:
+                    #for new_position in gen:
+                    new_position, totalInstructions, currentInstruction = next(gen)
+                except alreadyInPlaceException:
+                    continue
                 while True:
                     try:
                         status = {
