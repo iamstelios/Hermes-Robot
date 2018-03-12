@@ -45,7 +45,7 @@ class Move(SubInstruction):
 
         # pid stuff
         if not self.fake:
-            pid_run(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
+            pid_run2(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
 
         print('Arrived at %s' % self.nodeB.string)
         return self.nodeB

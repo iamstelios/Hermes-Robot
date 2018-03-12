@@ -64,7 +64,34 @@ def steering2(course, power):
             power_left = power + ((power * course) / 100)
     return (int(power_left), int(power_right))
 #-------------PID MOVEMENT----------------
-def pid_run(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color):
+# non aggressive pid
+def pid_run1(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color):
+    lastError = error = integral = 0
+    mLeft.run_direct()
+    mRight.run_direct()
+
+    while col.color != color: # color = junction entry marker color
+        print("col: %d" % col.color)
+        print("ref: %d" % ref.value())
+
+        refRead = ref.value()
+
+        error = trg - (100 * (refRead - minRng) / (maxRng - minRng))
+        derivative = error - lastError
+        lastError = error
+        integral = float(0.5) * integral + error
+        course = (kp * error + kd * derivative + ki * integral) * direction
+
+        # change between steering1 and steering 2 HERE for different modes
+        for (motor, pow) in zip((mLeft, mRight), steering1(course, mPower)):
+            motor.duty_cycle_sp = pow
+        time.sleep(0.01)
+
+    mLeft.stop()
+    mRight.stop()
+
+# aggressive pid
+def pid_run2(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color):
     lastError = error = integral = 0
     mLeft.run_direct()
     mRight.run_direct()
