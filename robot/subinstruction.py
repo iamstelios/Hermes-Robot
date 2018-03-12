@@ -45,13 +45,13 @@ class Move(SubInstruction):
         # junction to junction, workstation/base to junction, junction to workstation/base.
         print('Moving from %s to %s' % (self.nodeA.string, self.nodeB.string))
 
-        if (nodeA[0] == 'W' || nodeA[0] == 'B') && nodeB == 'J':
+        if (nodeA[0] == 'W' or nodeA[0] == 'B') and nodeB == 'J':
             pid_run2(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
             # TODO: Write code for "Do junction with exit self.exit" HERE
-        elif nodeA[0] == 'J' && (nodeB[0] == 'W' || nodeB[0] == 'B'):
+        elif nodeA[0] == 'J' and (nodeB[0] == 'W' or nodeB[0] == 'B'):
             # TODO: Write code for "Do junction with exit self.exit" HERE
             pid_run2(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
-        elif nodeA[0] == 'J' && nodeB == 'J':
+        elif nodeA[0] == 'J' and nodeB == 'J':
             if col.color == color:
                 # TODO: Write code for "Do junction with exit self.exit" HERE
                 pid_run2(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
