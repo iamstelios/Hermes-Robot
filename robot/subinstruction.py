@@ -8,8 +8,10 @@ from ev3dev.ev3 import *
 from time import sleep, time
 from vertical import *
 from pid import *
+#--------------VARS---------------------
 wait_time = 4
-#-----------CLASS-----------------------
+color = 9 # TODO: change this
+#--------------CLASS--------------------
 class SubInstruction(object):
     """ Abstract class """
     def run(self):
@@ -109,9 +111,7 @@ class BasePickUp(SubInstruction):
         v.move_to(self.level)
 
         # position robot inside the base
-        mLeft.run_timed(time_sp = 1500, speed_sp = 200)
-        mRight.run_timed(time_sp = 1500, speed_sp = 200)
-        mLeft.wait_until_not_moving()
+        pid_run1(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
 
         # calculate UP position of the shelf level
         if self.level == LiftPos.SHELF_0:
@@ -155,9 +155,7 @@ class BaseDrop(SubInstruction):
         else print('False level value. Please reinitialize.')
 
         # position robot inside the base
-        mLeft.run_timed(time_sp = 1500, speed_sp = 200)
-        mRight.run_timed(time_sp = 1500, speed_sp = 200)
-        mLeft.wait_until_not_moving()
+        pid_run1(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
 
         # return grabber to BOTTOM position for stability
         v.move_to(LiftPos.BOTTOM)
@@ -183,9 +181,7 @@ class WorkstationPickUp(SubInstruction):
         v.move_to(LiftPos.SHELF_0)
 
         # position robot inside the workspace
-        mLeft.run_timed(time_sp = 1500, speed_sp = 200)
-        mRight.run_timed(time_sp = 1500, speed_sp = 200)
-        mLeft.wait_until_not_moving()
+        pid_run1(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
 
         # move grabber to SHELF_0_UP position
         v.move_to(LiftPos.SHELF_0_UP)
@@ -214,9 +210,7 @@ class WorkstationDrop(SubInstruction):
         v.move_to(LiftPos.SHELF_0_UP)
 
         # position robot inside workstation
-        mLeft.run_timed(time_sp = 1500, speed_sp = 200)
-        mRight.run_timed(time_sp = 1500, speed_sp = 200)
-        mLeft.wait_until_not_working()
+        pid_run1(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
 
         # lower grabber level to BOTTOM
         v.move_to(LiftPos.BOTTOM)
