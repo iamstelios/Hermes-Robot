@@ -27,11 +27,11 @@ class Move(SubInstruction):
 
     # If node B is a junction, the robot should stop before entering the juction
     # Thus if the opposite is needed no exit input is needed to reach back node A.
-    def __init__(self, nodeA, nodeB, exit=None, fake=False):
+    def __init__(self, nodeA, nodeB, exit=None):
         from client import Position
         self.nodeA = nodeA
         self.nodeB = nodeB
-        self.fake = fake
+        self.success = True
         if exit is not None:
             self.exit = exit
             self.junctionExit = True
@@ -45,11 +45,27 @@ class Move(SubInstruction):
         # junction to junction, workstation/base to junction, junction to workstation/base.
         print('Moving from %s to %s' % (self.nodeA.string, self.nodeB.string))
 
-        # pid stuff
-        if not self.fake:
+        if (nodeA[0] == 'W' || nodeA[0] == 'B') && nodeB == 'J':
             pid_run2(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
-
-        print('Arrived at %s' % self.nodeB.string)
+            # TODO: Write code for "Do junction with exit self.exit" HERE
+        elif nodeA[0] == 'J' && (nodeB[0] == 'W' || nodeB[0] == 'B'):
+            # TODO: Write code for "Do junction with exit self.exit" HERE
+            pid_run2(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
+        elif nodeA[0] == 'J' && nodeB == 'J':
+            if col.color == color:
+                # TODO: Write code for "Do junction with exit self.exit" HERE
+                pid_run2(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
+            else:
+                pid_run2(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
+                # TODO: Write code for "Do junction with exit self.exit" HERE
+        else:
+            self.success = False
+        
+        if self.success == True
+            print('Arrived at %s' % self.nodeB.string)
+        else:
+            print('Invalid Move command requested.')
+        
         return self.nodeB
 
     def opposite(self):
