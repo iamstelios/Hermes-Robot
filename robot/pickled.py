@@ -25,7 +25,7 @@ without the prefix.
 def cut_prefix(var):
     for pre in PICKLE_VAR_PREFIXES:
         if pre.startswith(pre):
-            return var.lstrip(pre)
+            return var[len(pre):]
     raise ValueError("Name does not start with a valid prefix.")
 
 """

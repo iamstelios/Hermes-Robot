@@ -15,14 +15,14 @@ var port = process.env.PORT || 8080;
 //r for red, g for green, b for blue, y for yellow
 bases = [0];
 
-optimal_routes = [['b','r','g','g'],['y','y','b','r']];
+optimal_routes = [['b', 'r', 'g', 'g'], ['y', 'y', 'b', 'r']];
 
-endpoint_junction_connection = ['J0','J0','J1','J1'];
+endpoint_junction_connection = ['J0', 'J0', 'J1', 'J1'];
 
 junction_endpoints = [
-    {"r": "1", "g": "J1", "b":"0"},
-    {"r": "3", "b":"2","y":"J0"},
-    ];
+    { "r": "1", "g": "J1", "b": "0" },
+    { "r": "3", "b": "2", "y": "J0" },
+];
 
 //=================== MAP END =========================
 
@@ -74,10 +74,10 @@ activeRequests = [];
 // Used for position and queue progress updates
 processingRequests = [];
 
-function retrieveInStorageStatus(request){
+function retrieveInStorageStatus(request) {
     // Return the inStorage property of the item if it's a retrieve instruction
     // Returns true if not a retrieve instruction
-    if(request.action == "retrieve"){
+    if (request.action == "retrieve") {
         const inventory = storage.getItemSync("inventory");
         const itemIndex = inventory.findIndex(item => item.code == request.itemCode);
         return inventory[itemIndex].inStorage;
@@ -85,15 +85,15 @@ function retrieveInStorageStatus(request){
     return true;
 }
 
-function updateInStorageStatus(request, notCancelled){
+function updateInStorageStatus(request, notCancelled) {
     // Update the inStorage status of the item of the request
-    if(request.action == "retrieve"){
+    if (request.action == "retrieve") {
         storage.mutate("inventory", function (inventory) {
             const itemIndex = inventory.findIndex(item => item.code == request.itemCode);
             inventory[itemIndex].inStorage = !notCancelled;
             return inventory;
         });
-    }else if(request.action == "store"){
+    } else if (request.action == "store") {
         storage.mutate("inventory", function (inventory) {
             const itemIndex = inventory.findIndex(item => item.code == request.itemCode);
             inventory[itemIndex].inStorage = notCancelled;
@@ -108,16 +108,16 @@ function setComplete(requestId) {
         // First request
         return;
     }
-    // Changes completed property in request history
+    // Change completed property in request history
     const requestIndex = storage.getItemSync("requests").findIndex(request => request.id == requestId);
     storage.mutate("requests", requests => {
         if (requests[requestIndex].completed != "cancelled") {
             requests[requestIndex].completed = "completed";
-        }else{
+        } else {
             // Request was cancelled
             // Revert the inStorage status of the item of the request
             var request = requests[requestIndex];
-            updateInStorageStatus(request,false);
+            updateInStorageStatus(request, false);
         }
         return requests;
     });
@@ -148,76 +148,99 @@ wss.on('connection', function connection(ws) {
         console.log('received: %s', data);
         debugger;
         var message = JSON.parse(data);
-        switch(message.status){
-        case "Requesting new instruction":
-            setComplete(ws.processRequestId);
+        switch (message.status) {
+            case "Requesting new instruction":
+                setComplete(ws.processRequestId);
 
-            if (activeRequests.length > 0) {
-                var request = activeRequests.shift();
-                if (!retrieveInStorageStatus(request)){
-                    // Request needs to wait for the item to become available
-                    activeRequests.unshift(request);
-                    // Find a request that can be processed
-                    var foundAnotherRequest = false;
-                    for(var index = 1; index<activeRequests.length; index++){
-                        if(retrieveInStorageStatus(activeRequests[index])){
-                            foundAnotherRequest = true;
-                            request = activeRequests[index];
-                            // Remove the request from the active request list
-                            activeRequests.splice(index,1);
+                if (activeRequests.length > 0) {
+                    var request = activeRequests.shift();
+                    if (!retrieveInStorageStatus(request)) {
+                        // Request needs to wait for the item to become available
+                        activeRequests.unshift(request);
+                        // Find a request that can be processed
+                        var foundAnotherRequest = false;
+                        for (var index = 1; index < activeRequests.length; index++) {
+                            if (retrieveInStorageStatus(activeRequests[index])) {
+                                foundAnotherRequest = true;
+                                request = activeRequests[index];
+                                // Remove the request from the active request list
+                                activeRequests.splice(index, 1);
+                                break;
+                            }
+                        }
+                        if (!foundAnotherRequest) {
+                            // No instruction in the queue can be processed
+                            idleRobotIds.push(ws.robotId);
+                            console.log(`Robot with id: ${ws.robotId} added to the idle list`);
                             break;
                         }
                     }
-                    if(!foundAnotherRequest){
-                        // No instruction in the queue can be processed
-                        idleRobotIds.push(ws.robotId);
-                        console.log(`Robot with id: ${ws.robotId} added to the idle list`);
-                        break;
-                    }
+                    updateInStorageStatus(request, true);
+                    ws.send(JSON.stringify(request));
+                    console.log('send: %s', JSON.stringify(request));
+                    //Save the id for later use
+                    ws.processRequestId = request.id;
+                    //Add the request to the processing list
+                    processingRequests.push({ "id": ws.processRequestId, "robotId": ws.robotId });
+                } else {
+                    // No instruction in the queue thus add to iddle list
+                    idleRobotIds.push(ws.robotId);
+                    console.log(`Robot with id: ${ws.robotId} added to the idle list`);
                 }
-                updateInStorageStatus(request,true);
-                ws.send(JSON.stringify(request));
-                console.log('send: %s', JSON.stringify(request));
-                //Save the id for later use
-                ws.processRequestId = request.id;
-                //Add the request to the processing list
-                processingRequests.push({ "id": ws.processRequestId, "robotId": ws.robotId });
-            } else {
-                // No instruction in the queue thus add to iddle list
-                idleRobotIds.push(ws.robotId);
-                console.log(`Robot with id: ${ws.robotId} added to the idle list`);
-            }
-            break;
+                break;
 
-        case "Check Cancellation":
-            if (checkCancelled(ws.processRequestId)) {
-                ws.send(cancelled_json);
-                console.log('send: %s', cancelled_json);
-            } else {
-                ws.send(not_cancelled_json);
-                console.log('send: %s', not_cancelled_json);
-            }
-            break;
-        case "Position and queue progress update":
-            var index = processingRequests.findIndex(request => request.id == ws.processRequestId);
-            processingRequests[index].position = message.position // String
-            processingRequests[index].progress = message.progress //
-            console.log(`Position:${processingRequests[index].position} , Queue progress: ${processingRequests[index].progress.currentSteps} / ${processingRequests[index].progress.totalSteps}`);
-            break;
-        case "Position update":
-            var index = processingRequests.findIndex(request => request.id == ws.processRequestId);
-            processingRequests[index].position = message.position // String
-            console.log(`Position:${processingRequests[index].position}`);
+            case "Check Cancellation":
+                if (checkCancelled(ws.processRequestId)) {
+                    ws.send(cancelled_json);
+                    console.log('send: %s', cancelled_json);
+                } else {
+                    ws.send(not_cancelled_json);
+                    console.log('send: %s', not_cancelled_json);
+                }
+                break;
+            case "Position and queue progress update":
+                var index = processingRequests.findIndex(request => request.id == ws.processRequestId);
+                processingRequests[index].position = message.position // String
+                processingRequests[index].progress = message.progress //
+                console.log(`Position:${processingRequests[index].position} , Queue progress: ${processingRequests[index].progress.currentSteps} / ${processingRequests[index].progress.totalSteps}`);
+                break;
+            case "Position update":
+                var index = processingRequests.findIndex(request => request.id == ws.processRequestId);
+                processingRequests[index].position = message.position // String
+                console.log(`Position:${processingRequests[index].position}`);
         }
     });
     ws.on('close', function close() {
         // Remove robot id from idle (if in idle)
-        index = idleRobotIds.findIndex(id => id == ws.robotId);
-        idleRobotIds.splice(index, 1);
+        var index = idleRobotIds.findIndex(id => id == ws.robotId);
+        if (index != -1) {
+            idleRobotIds.splice(index, 1);
+        } else {
+            // Robot is excecuting a command
+            index = processingRequests.findIndex(request => request.id == ws.processRequestId);
+            // Remove the request from the processing list
+            processingRequests.splice(index, 1);
+            // Change completed property in request history
+            const requestIndex = storage.getItemSync("requests").findIndex(request => request.id == ws.processRequestId);
+            storage.mutate("requests", requests => {
+                requests[requestIndex].completed = "disconnected";
+                // Assign the inStorage status to missing
+                var request = requests[requestIndex];
+                if (request.action == "store") {
+                    storage.mutate("inventory", function (inventory) {
+                        const itemIndex = inventory.findIndex(item => item.code == request.itemCode);
+                        inventory[itemIndex].inStorage = false;
+                        return inventory;
+                    });
+                }
+                return requests;
+            });
+        }
+
         console.log('Robot %d disconnected', ws.robotId);
     });
 
 });
 
-module.exports.updateInStorageStatus = updateInStorageStatus; 
+module.exports.updateInStorageStatus = updateInStorageStatus;
 module.exports.retrieveInStorageStatus = retrieveInStorageStatus;
