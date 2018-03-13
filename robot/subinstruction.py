@@ -39,7 +39,6 @@ class Move(SubInstruction):
     # If node B is a junction, the robot should stop before entering the juction
     # Thus if the opposite is needed no exit input is needed to reach back node A.
     def __init__(self, nodeA, nodeB, exit=None):
-        from client import Position
         self.nodeA = nodeA
         self.nodeB = nodeB
         self.success = True
