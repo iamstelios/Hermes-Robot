@@ -200,9 +200,12 @@ def queueProcessor(queue, uncancellableQueue = deque()):
         # Dequeue sub instruction
         subInstruction = uncancellableQueue.popleft()
         # Run instruction dequeued
-        position_change = subInstruction.run()
-        if position_change is not None:
-            last_pos = position_change
+        try:
+            position_change = subInstruction.run()
+            if position_change is not None:
+                last_pos = position_change
+        except Exception as e:
+            print("Error: SubInstruction failed to execute " + str(e))
         # poll server for cancellation and update position
         cancelled = (yield last_pos.string, totalInstructions, totalInstructions-len(queue)-len(uncancellableQueue))
 
@@ -213,9 +216,12 @@ def queueProcessor(queue, uncancellableQueue = deque()):
         # Add reverse instruction to the reverse stack
         reverseStack.append(subInstruction.opposite())
         # Run instruction dequeued
-        position_change = subInstruction.run()
-        if position_change is not None:
-            last_pos = position_change
+        try:
+            position_change = subInstruction.run()
+            if position_change is not None:
+                last_pos = position_change
+        except Exception as e:
+            print("Error: SubInstruction failed to execute " + str(e))
         # poll server for cancellation
         cancelled = (yield last_pos.string, totalInstructions, totalInstructions-len(queue)-len(uncancellableQueue))
 
@@ -235,9 +241,12 @@ def queueProcessor(queue, uncancellableQueue = deque()):
             # yield for the sake of updating progress
             yield last_pos.string, totalInstructions, totalInstructions-len(reverseStack)
             continue
-        position_change = subInstruction.run()
-        if position_change:
-            last_pos = position_change
+        try:
+            position_change = subInstruction.run()
+            if position_change:
+                last_pos = position_change
+        except Exception as e:
+            print("Error: SubInstruction failed to execute " + str(e))
         #Send position to the server
         yield last_pos.string, totalInstructions, totalInstructions-len(reverseStack)
     
