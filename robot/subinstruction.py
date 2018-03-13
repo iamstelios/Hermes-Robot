@@ -3,12 +3,25 @@
 #---------FOR PRESENTATION--------------
 from time import sleep
 from vertical import *
+from client import junction_endpoints
 from ev3dev.ev3 import *
+import linefollower
+
 wait_time = 4
 v = VerticalMovementManager()
 #---------------------------------------
-# TODO: Initialize ev3 stuff
 
+mLeft = LargeMotor('outD')
+mRight = LargeMotor('outC')
+
+col = ColorSensor('in4')
+ref = ColorSensor('in3')
+
+col.mode = 'COL-COLOR'
+ref.mode = 'COL-REFLECT'
+
+mRight.polarity = 'inversed'
+mLeft.polarity = 'inversed'
 
 class SubInstruction(object):
     """ Abstract class """
@@ -42,15 +55,14 @@ class Move(SubInstruction):
         return self.nodeB
 
 
-def opposite(self):
-    from client import junction_endpoints
-    new_exit = None
-    if self.nodeB.isJunction:
-        # Find which exit to use
-        # r for red, g for green, b for blue, y for yellow
-        new_exit = [colour for colour, node in junction_endpoints[
-            self.nodeB.number].items() if node == self.nodeA.string][0]
-    return Move(self.nodeB, self.nodeA, new_exit)
+    def opposite(self):
+        new_exit = None
+        if self.nodeB.isJunction:
+            # Find which exit to use
+            # r for red, g for green, b for blue, y for yellow
+            new_exit = [colour for colour, node in junction_endpoints[
+                self.nodeB.number].items() if node == self.nodeA.string][0]
+        return Move(self.nodeB, self.nodeA, new_exit)
 
 class Reverse(SubInstruction):
     # Reverses the position of the robot 180 degrees
@@ -102,7 +114,7 @@ class BasePickUp(SubInstruction):
         v.move_to(self.level)
 
         # position robot inside the base
-        pid_run1(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
+        # pid_run1(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
 
         # calculate UP position of the shelf level
         if self.level == LiftPos.SHELF_0:
@@ -111,7 +123,7 @@ class BasePickUp(SubInstruction):
             v.move_to(LiftPos.SHELF_1_UP)
         elif self.level == LiftPos.SHELF_2:
             v.move_to(LiftPos.SHELF_2_UP)
-        else print('False level value. Please reinitialize.')
+        else: print('False level value. Please reinitialize.')
 
         # move back
         mLeft.run_timed(time_sp = 2000, speed_sp = -200)
@@ -143,10 +155,10 @@ class BaseDrop(SubInstruction):
             v.move_to(LiftPos.SHELF_1_UP)
         elif self.level == LiftPos.SHELF_2:
             v.move_to(LiftPos.SHELF_2_UP)
-        else print('False level value. Please reinitialize.')
+        else: print('False level value. Please reinitialize.')
 
         # position robot inside the base
-        pid_run1(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
+        # pid_run1(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
 
         # return grabber to BOTTOM position for stability
         v.move_to(LiftPos.BOTTOM)
@@ -172,7 +184,7 @@ class WorkstationPickUp(SubInstruction):
         v.move_to(LiftPos.SHELF_0)
 
         # position robot inside the workspace
-        pid_run1(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
+        # pid_run1(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
 
         # move grabber to SHELF_0_UP position
         v.move_to(LiftPos.SHELF_0_UP)
@@ -201,7 +213,7 @@ class WorkstationDrop(SubInstruction):
         v.move_to(LiftPos.SHELF_0_UP)
 
         # position robot inside workstation
-        pid_run1(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
+        # pid_run1(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
 
         # lower grabber level to BOTTOM
         v.move_to(LiftPos.BOTTOM)
