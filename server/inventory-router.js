@@ -54,9 +54,10 @@ inventoryRouter.post('/', function (req, res) {
     item.code = id;
     // Check who made the request (user / admin)
     var requestor = req.get('Requestor');
-    if (requestor == "user") {
-        console.log("Inventory post made by user");
-        item.inStorage = false;
+    if (requestor >= "user") {
+        var user = req.get("User");
+        console.log("Inventory post made by user %d", user);
+        item.inStorage = true;
         var emptyLocation = findEmptyLocation();
         if(emptyLocation !== undefined){
             item.location = emptyLocation.location;
@@ -64,6 +65,39 @@ inventoryRouter.post('/', function (req, res) {
         }else{
             return res.json({ errors: ["All bases are full, cannot store new items"] });
         }
+        // Make a retrieve request to bring the empty box from the storage to the user to fill it
+        var request = new Object();
+        var reqId = storage.mutate("lastReqId", val => val + 1);
+        request.id = reqId;
+        request.action = "retrieve";
+        request.itemCode = item.code;
+        request.src = item.location;
+        request.dst = user;
+        request.level = item.level;
+        request.emptyBox = true;
+        request.title = "Retrieve " + item.name + " from store " + request.src;
+        request.completed = "no";
+        // Append to the requests history
+        storage.mutate("requests", function (val) {
+            val.push(request);
+            return val;
+        });
+        //Send the empty box retrieve request to the next avaible robot or add it the queue
+        if (idleRobotIds.length > 0) {
+            // Assign the instruction to the first robot available
+            item.inStorage = false; // Item should be noted as not inStorage
+            var robotId = idleRobotIds.shift();
+            var index =  robots.findIndex(ws => ws.robotId == robotId);
+            robots[index].processRequestId = request.id;
+            robots[index].send(JSON.stringify(request));
+            console.log('send: %s', JSON.stringify(request));
+            processingRequests.push({"id": robots[index].processRequestId, "robotId": robots[index].robotId});
+            
+        } else {
+            // No robot available or request needs to wait for an item -> add to queue
+            activeRequests.push(request);
+        }
+
     } else if (requestor == "admin") {
         console.log("Inventory post made by admin");
         item.inStorage = true;
@@ -103,7 +137,7 @@ inventoryRouter.delete('/:id', lookupItem, function (req, res) {
         return val;
     });
     res.statusCode = 204;
-    console.log("Item id: " + req.item.code + " deleted from the inventory.");
+    console.log("Item id: " + req.itemIndex + " deleted from the inventory.");
     res.send();
 });
 

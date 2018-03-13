@@ -71,6 +71,7 @@ requestRouter.post('/', function (req, res) {
         if(request.action == "retrieve" ){
             request.src = item.location;
             request.level = item.level; 
+            request.emptyBox = false;
             request.title = "Retrieve " + item.name + " from store " + request.src;
         }else if(request.action == "store"){
             // Check if another request waits for the storing item
@@ -119,7 +120,7 @@ requestRouter.post('/', function (req, res) {
         robots[index].processRequestId = request.id;
         robots[index].send(JSON.stringify(request));
         console.log('send: %s', JSON.stringify(request));
-        processingRequests.push({"id": robots[index].processRequestId, "robotId": robots[index].robotId})
+        processingRequests.push({"id": robots[index].processRequestId, "robotId": robots[index].robotId});
         
     } else {
         // No robot available or request needs to wait for an item -> add to queue
