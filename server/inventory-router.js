@@ -35,7 +35,7 @@ function findEmptyLocation() {
             var itemsInPosition = inventory.filter(item => item.location == base && item.level == level);
             if (itemsInPosition.length == 0) {
                 return {
-                    "location" : base,
+                    "location" : base.toString(),
                     "level": level
                 };
             }
@@ -54,7 +54,7 @@ inventoryRouter.post('/', function (req, res) {
     item.code = id;
     // Check who made the request (user / admin)
     var requestor = req.get('Requestor');
-    if (requestor >= "user") {
+    if (requestor == "user") {
         var user = req.get("User");
         console.log("Inventory post made by user %d", user);
         item.inStorage = true;
