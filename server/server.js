@@ -156,9 +156,10 @@ wss.on('connection', function connection(ws) {
                 var request = activeRequests.shift();
                 if (!retrieveInStorageStatus(request)){
                     // Request needs to wait for the item to become available
+                    activeRequests.unshift(request);
                     // Find a request that can be processed
                     var foundAnotherRequest = false;
-                    for(var index; index<activeRequests.length; index++){
+                    for(var index = 1; index<activeRequests.length; index++){
                         if(retrieveInStorageStatus(activeRequests[index])){
                             foundAnotherRequest = true;
                             request = activeRequests[index];
