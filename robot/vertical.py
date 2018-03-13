@@ -1,7 +1,8 @@
 from ev3dev.ev3 import MediumMotor, OUTPUT_A
-from enum import IntEnum
+from enum import IntEnum, Enum
 from pickled import pickled
 from arduino import ArduinoSensorsManager
+import time
 
 
 """ Possible positions of the lift, in percentage units. """
@@ -10,26 +11,35 @@ class LiftPos(IntEnum):
     TOP = 100
 
     SHELF_0 = 5
-    SHELF_0_UP = 29
-    SHELF_1 = 51
-    SHELF_1_UP = 65
-    SHELF_2 = 83
-    SHELF_2_UP = 95
+    SHELF_0_UP = 28
+    SHELF_1 = 41
+    SHELF_1_UP = 61
+    SHELF_2 = 87
+    SHELF_2_UP = 100
+
+""" Motor unit positions are in the range 0-TOP_MOTOR_POS. """
+TOP_MOTOR_POS = 13000 # The position delta of the motor from top to bottom
+
+""" Converts a position in motor units to a percentage positon. """
+def motor_to_percent(motor_pos):
+    return motor_pos / TOP_MOTOR_POS * LiftPos.TOP
+
+""" Converts a percentage position to a position in motor units. """
+def percent_to_motor(pos):
+    return int(pos * TOP_MOTOR_POS / LiftPos.TOP)
 
 """
 Given a lift position either returns the Reed switch number
 if there is a sensor at that location or None if there isn't one.
 """
-# TODO add more sensors
 def get_reed_id(loc):
-    return None
     if loc == LiftPos.SHELF_0:
         return 0
     elif loc == LiftPos.SHELF_0_UP:
         return 1
     elif loc == LiftPos.SHELF_1:
         return 2
-    if loc == LiftPos.SHELF_1_UP:
+    elif loc == LiftPos.SHELF_1_UP:
         return 3
     elif loc == LiftPos.SHELF_2:
         return 4
@@ -37,17 +47,6 @@ def get_reed_id(loc):
         return 5
     else:
         return None
-
-""" Motor unit positions are in the range 0-TOP_MOTOR_POS. """
-TOP_MOTOR_POS = 14000 # The position_sp of the motor at the top
-
-""" Converts a position in motor units to a percentage positon. """
-def motor_to_percent(motor_pos):
-    return int(motor_pos / TOP_MOTOR_POS * LiftPos.TOP)
-
-""" Converts a percentage position to a position in motor units. """
-def percent_to_motor(pos):
-    return int(pos * TOP_MOTOR_POS / LiftPos.TOP)
 
 """ Manages the movement of the lift and runs the vertical motor. """
 @pickled
@@ -66,7 +65,7 @@ class VerticalMovementManager:
         self._motor.speed_sp = 500
 
         # Position of the lift in percentage units, preserved across runs
-        self._pkl_position = LiftPos.BOTTOM
+        self._pkl_pos = LiftPos.BOTTOM
 
         # TODO if we need sensors for other things, initialize this manager
         # outside of VerticalMovementManager and only pass a reference
@@ -77,115 +76,189 @@ class VerticalMovementManager:
     manually or fell.
     """
     def set_position(self, pos):
-        self._pkl_position = pos
+        self._pkl_pos = pos
 
     """
-    Moves in steps of the specified size for as long as the given condition evalutes to True. An
-    optional maximum distance in motor units can be specified. Makes sure not to go outside of the
-    valid position range. Returns the moved distance in motor units or None if the motor was stalled.
-    Doesn't update the stored position.
+    Moves the lift to the specified percentage position. Doesn't use
+    any sensors besides the motor tacho count.
+    pos - where to move
     """
-    def _move_while(self, cond, step = 10, max = None):
-        init_pos = self._motor.position
+    def _move_to_raw(self, pos):
+        if self._pkl_pos != pos:
+            curr_pos_m = percent_to_motor(self._pkl_pos) # Current position [motor]
+            pos_m = percent_to_motor(pos) # Desired position [motor]
 
-        while cond():
-            self._motor.run_to_rel_pos(position_sp = step)
-
-            while self._motor.is_running and cond():
-                # Make sure motor doesn't stall;
-                if self._motor.is_stalled:
-                    self._motor.stop()
-                    return None
-
-                diff = self._motor.position - init_pos
-                new_pos = self._pkl_position + motor_to_percent(diff)
-
-                # Bound distance travelled within the given value if specified
-                # and position within percentage range
-                if (max != None and diff >= max)
-                or (new_pos == 0 or new_pos == 100):
-                    self._motor.stop()
-                    return diff
-
-            self._motor.stop()
-
-        return self._motor.position - init_pos
-
-    """
-    Assuming the lift is close to the given Reed switch, tries
-    to position the lift in the middle of the switch.
-    reed - (Reed switch number, height range)
-    """
-    def move_to_switch(self, reed):
-        # Size of the range to scan for switches in motor units
-        diff = 500
-
-        init_pos = self._motor.position
-
-        def run(n):
-            self._motor.run_to_rel_pos(position_sp = n)
+            self._motor.run_to_rel_pos(position_sp = pos_m - curr_pos_m)
             self._motor.wait_until_not_moving()
+            self._pkl_pos = pos
+
+    class _MoveWhileResult(Enum):
+        STALLED = 1, # Engine was stalled
+        OVER_RANGE = 2, # Stopped at percentage range boundary
+        OVER_LIM = 3, # Stopped at given limit
+        COND = 4, # Stopped due to condition False
+
+    """
+    Moves with the specified slowdown for as long as the given condition evalutes to True. An
+    optional maximum distance in motor units can be specified. Makes sure not to go outside of the
+    valid position range. Returns the distance travelled in motor units.
+    cond - () -> Boolean function. evaluated as frequently as possible. movement stops when False
+    mult - how many times to slow down. larger values allow for more precision and an earlier stop
+    [lim] - maximum distance to travel in motor units
+    """
+    def _move_while(self, cond, mult = 4, lim = None):
+        print("_move_while(cond={},mult={},lim={})".format(cond, mult, lim))
+
+        # First position within valid range
+        if self._pkl_pos < 0:
+            self._move_to_raw(0)
+        elif self._pkl_pos > 100:
+            self._move_to_raw(100)
+
+        init_pos = self._motor.position
+        sign = mult // abs(mult)
+
+        # Set motor parameters
+        self._motor.speed_sp //= mult
+        self._motor.polarity = 'normal' if mult > 0 else 'inversed'
+        self._motor.run_forever()
+
+        ret = None
+
+        while self._motor.is_running and cond():
+            print(cond())
+            if self._motor.is_stalled:
+                ret = self._MoveWhileResult.STALLED
+                break
+            else:
+                motor_pos = self._motor.position * sign
+                diff = motor_pos - init_pos
+
+                if lim != None and diff >= lim:
+                    ret = self._MoveWhileResult.OVER_LIM
+                    break
+
+                new_pos = self._pkl_pos + motor_to_percent(diff)
+
+                if new_pos <= -2 or new_pos >= 102:
+                    ret = self._MoveWhileResult.OVER_RANGE
+                    break
+
+        if ret == None:
+            ret = self._MoveWhileResult.COND
+
+        # Reset motor parameters
+        self._motor.stop()
+        self._motor.polarity = 'normal'
+        self._motor.speed_sp *= mult
+
+        # Update position
+        diff = self._motor.position - init_pos
+        self._pkl_pos += motor_to_percent(diff)
+        
+        return ret
+
+    """
+    Tries to position the lift in the middle of the switch.
+    reed - Reed switch number
+    pos - an approximate percentage position of the switch
+    """
+    def _move_to_switch(self, reed, pos):
+        print("_move_to_switch(reed={},pos={})".format(reed, pos))
+
+        SPREAD = 5 # Minimum distance to the sensor to begin sensing
+
+        # Distance and direction to the sensor
+        diff = pos - self._pkl_pos
+        sign = int(diff / abs(diff))
+        assert(abs(sign) == 1)
 
         see_mag = lambda: self._sensors.read_reed(reed)
 
-        if see_mag():
-            # We start on a peak, go up to find valley
-            self._move_while(see_mag, 5)
-
-            # Now we reached either the center or one of the sides
-            # TODO on top sensor this fails probably
-            mvd = self._move_while(lambda: not see_mag(), 5, diff)
-
-            if mvd == diff:
-                # We moved far, so it's probably not the center but rather one of the sides,
-                # go back until we see the center
-                run(-mvd - 10)
-                self._move_while(see_mag, -5)
+        if abs(diff) >= SPREAD:
+            if sign > 0:
+                print("Switch above lift")
             else:
-                # We didn't move far, so this is the center
-                pass
+                print("Switch below lift")
+
+            # Move up to sensor at full speed, pray it doesn't miss
+            mvd = self._move_while(lambda: not see_mag(), sign)
+            if mvd != self._MoveWhileResult.COND:
+                raise ValueError("ERROR: Sensor not within reach. Move result: " + str(mvd))
+
+            # Scale the peak to get to the center, use reduced speed for accuracy
+            mvd = self._move_while(see_mag, 5 * sign, 1000)
+
         else:
-            # We are in a valley or in the center
+            print("WARNING: Lift close to desired position, not moving.")
+            return
 
-            # Go up until either we see magnet or go too far
-            # TODO on top sensor this fails probably
-            mvd = self._move_while(lambda: not see_mag(), 5, diff)
+            # First find one of the peaks
+            mult = 4 * sign
+            if not see_mag():
+                print("Looking for peak 1")
 
-            if mvd == diff:
-                # We moved far, so this is one of the sides
-                run(-mvd)
+                diff = 500
 
-                # Go down until we see the first peak
-                self._move_while(lambda: not see_mag(), -5)
+                mvd = self._move_while(lambda: not see_mag(), mult, diff)
 
-                # Scale the peak and get to center
-                self._move_while(see_mag, -5)
+                while mvd != self._MoveWhileResult.COND:
+                    print(mvd)
+                    print("Moved far, reverting search direction")
+                    diff *= 2
+                    mult *= -1
 
+                    mvd = self._move_while(lambda: not see_mag(), mult, diff)
+
+            sign = int(mult / abs(mult))
+
+            peak1 = [0, 0]
+            peak2 = [0, 0]
+
+            # We're on a peak, find its limits by going up and down
+            print("Scanning peak 1")
+            time.sleep(1.5)
+            self._move_while(see_mag, mult)
+            peak1[(sign + 1) // 2] = self._motor.position
+
+            print("Scanning peak 1 in 2nd direction")
+            time.sleep(1.5)
+            # Move a tiny bit down to be within peak again
+            mvd = self._move_while(lambda: not see_mag(), -mult, 500) 
+            if mvd != self._MoveWhileResult.COND:
+                raise ValueError("ERROR: peak 1 not wi")
+
+            self._move_while(see_mag, -mult)
+            peak1[(-sign + 1) // 2] = self._motor.position
+
+            print(peak1)
+            return
+
+            print("Looking for peak 2")
+            time.sleep(1.5)
+            mvd = self._move_while(lambda: not see_mag(), -4, 250)
+            if mvd == self._MoveWhileResult.OVER_LIM or mvd == self._MoveWhileResult.OVER_RANGE:
+                print("Moved far down from peak 1, so peak 2 is above. Moving to center")
+                self._move_to_raw(self._pkl_pos + motor_to_percent(peak1[1] - self._motor.position))
+                self._move_to_raw(self._pkl_pos + 1)
             else:
-                # We didn't go far, so this is the center
-                pass
+                print("Moved just a bit from peak 1, so peak 2 is below. Moving to center")
+                top = self._motor.position
+                self._move_to_raw(self._pkl_pos + motor_to_percent(peak1[0] - top)/2)
 
-        # Store the new position
-        self._pkl_position += motor_to_percent(self._motor.position - init_pos)
-
-    """ Moves the lift to the specified percentage position. """
+    """
+    Moves the lift to the specified percentage position, using all
+    available information.
+    pos - where to move
+    """
     def move_to(self, pos):
-        # Desired position [motor]
-        pos_m = percent_to_motor(pos) # Desired position [motor]
-        # Current position [motor]
-        curr_pos_m = percent_to_motor(self._pkl_position)
-        # Absolute current position [motor]
-        curr_pos_sp = self._motor.position_sp
-
-        if not self._pkl_position == pos:
-            # Begin moving to roughly the right position
-            self._motor.run_to_rel_pos(position_sp = pos_m - curr_pos_m)
-            self._motor.wait_until_not_moving()
-
-            self._pkl_position = pos
-
-            # Then, if there is a sensor at that height, position the lift
-            # accurately until it's at the sensor
+        if not self._pkl_pos == pos:
             reed = get_reed_id(pos)
+
             if reed is not None:
-                self.move_to_switch(reed)
+                # If there is a sensor at that height, position the lift
+                # accurately until it's at the sensor
+                self._move_to_switch(reed, pos)
+            else:
+                # Otherwise move to the position using just the tacho count
+                self._move_to_raw(pos)
