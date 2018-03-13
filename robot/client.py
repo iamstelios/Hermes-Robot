@@ -2,7 +2,7 @@
 
 import asyncio
 import websockets
-#import ev3dev.ev3 as ev3
+import ev3dev.ev3 as ev3
 import json
 import sys
 import re
@@ -359,17 +359,12 @@ def handler(ip):
                                 new_position, totalInstructions, currentInstruction = gen.send(cancelled)
                             except StopIteration:
                                 break
-                # No need to send confirmation of instruction completed or cancelled
+                # No need to send confirmation of instruction completed or cancelled           
 
-        except asyncio.TimeoutError:
-            # Check the connection.
-            try:
-                pong_waiter = yield from ws.ping()
-                yield from asyncio.wait_for(pong_waiter, timeout=10)
-            except asyncio.TimeoutError:
-                # No response to ping in 10 seconds, disconnect.
-                #TODO: ADD A SPEAKER ALARM TO ALERT WORKERS
-                break
+        except websockets.exceptions.ConnectionClosed:
+            for x in range(3):
+                ev3.Sound.speak("Lost connection to server")
+            break
 
     yield from websocket.close()
 
