@@ -52,8 +52,31 @@ class Reverse(SubInstruction):
     def run(self):
         print('Reversing direction')
 
-        #TODO: WRITE CODE FOR MOVEMENT HERE!
-        sleep(wait_time)
+        mLeft.duty_cycle_sp = 0
+        mRight.duty_cycle_sp = 0
+
+        mLeft.run_direct()
+        mRight.run_direct()
+
+        mLeft.duty_cycle_sp = -30
+        mRight.duty_cycle_sp = 30
+
+        sleep(1.5)
+
+        ref_val = ref.value()
+        while not ref_val > 40:
+            ref_val = ref.value()
+            print(ref_val)
+
+        sleep(0.5)
+
+        mLeft.duty_cycle_sp = 0
+        mRight.duty_cycle_sp = 0
+        mLeft.stop()
+        mRight.stop()
+
+        sleep(0.5)
+
         print('Direction reversed')
         return None
 
@@ -69,7 +92,29 @@ class BasePickUp(SubInstruction):
     def run(self):
         print('Picking up box at level %d' % self.level)
 
-        #TODO: WRITE CODE FOR MOVEMENT HERE!
+        # raise grabber to shelf level
+        v.move_to(self.level)
+
+        # position robot inside the base
+        pid_run1(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
+
+        # calculate UP position of the shelf level
+        if self.level == LiftPos.SHELF_0:
+            v.move_to(LiftPos.SHELF_0_UP)
+        elif self.level == LiftPos.SHELF_1:
+            v.move_to(LiftPos.SHELF_1_UP)
+        elif self.level == LiftPos.SHELF_2:
+            v.move_to(LiftPos.SHELF_2_UP)
+        else print('False level value. Please reinitialize.')
+
+        # move back
+        mLeft.run_timed(time_sp = 2000, speed_sp = -200)
+        mRight.run_timed(time_sp = 2000, speed_sp = -200)
+        mLeft.wait_until_not_moving()
+
+        # lower grabber level to BOTTOM
+        v.move_to(LiftPos.BOTTOM)
+
         sleep(wait_time)
         print('Picked up box at level %d' % self.level)
         return None
@@ -85,7 +130,26 @@ class BaseDrop(SubInstruction):
     def run(self):
         print('Dropping box at level %d' % self.level)
 
-        #TODO: WRITE CODE FOR MOVEMENT HERE!
+        # calculate UP position of shelf level
+        if self.level == LiftPos.SHELF_0:
+            v.move_to(LiftPos.SHELF_0_UP)
+        elif self.level == LiftPos.SHELF_1:
+            v.move_to(LiftPos.SHELF_1_UP)
+        elif self.level == LiftPos.SHELF_2:
+            v.move_to(LiftPos.SHELF_2_UP)
+        else print('False level value. Please reinitialize.')
+
+        # position robot inside the base
+        pid_run1(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
+
+        # return grabber to BOTTOM position for stability
+        v.move_to(LiftPos.BOTTOM)
+
+        # move back
+        mLeft.run_timed(time_sp = 2000, speed_sp = -200)
+        mRight.run_timed(time_sp = 2000, speed_sp = -200)
+        mLeft.wait_until_not_moving()
+
         sleep(wait_time)
         print('Dropped box at level %d' % self.level)
         return None
@@ -98,7 +162,23 @@ class WorkstationPickUp(SubInstruction):
     def run(self):
         print('Picking up box from workstation')
 
-        #TODO: WRITE CODE FOR MOVEMENT HERE!
+        # move grabber to SHELF_0 position
+        v.move_to(LiftPos.SHELF_0)
+
+        # position robot inside the workspace
+        pid_run1(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
+
+        # move grabber to SHELF_0_UP position
+        v.move_to(LiftPos.SHELF_0_UP)
+
+        # move back
+        mLeft.run_timed(time_sp = 2000, speed_sp = -200)
+        mRight.run_timed(time_sp = 2000, speed_sp = -200)
+        mLeft.wait_until_not_moving()
+
+        # lower grabber level to BOTTOM
+        v.move_to(LiftPos.BOTTOM)
+
         sleep(wait_time)
         print('Picked up box from workstation')
         return None
@@ -111,7 +191,20 @@ class WorkstationDrop(SubInstruction):
     def run(self):
         print('Dropping box to workstation')
 
-        #TODO: WRITE CODE FOR MOVEMENT HERE!
+        # move grabber to SHELF_0_UP position
+        v.move_to(LiftPos.SHELF_0_UP)
+
+        # position robot inside workstation
+        pid_run1(mPower, trg, kp, kd, ki, direction, minRng, maxRng, color)
+
+        # lower grabber level to BOTTOM
+        v.move_to(LiftPos.BOTTOM)
+
+        # move back
+        mLeft.run_timed(time_sp = 2000, speed_sp = -200)
+        mRight.run_timed(time_sp = 2000, speed_sp = -200)
+        mLeft.wait_until_not_moving()
+
         sleep(wait_time)
         print('Dropped box to workstation')
         return None

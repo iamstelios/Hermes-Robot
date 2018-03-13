@@ -26,13 +26,6 @@ storage.storeIfNotStored("inventory", []);
 // Last inventory Id
 storage.storeIfNotStored("lastInvId", 0);
 
-// I suggest using an array instead of storage
-// because robots are going to be identified as
-// different each time they reconnect
-//storeIfNotStored("robots", []);
-// Last robot id
-//storeIfNotStored("lastRobId", 0);
-
 // Parse the jason file using the body-parser middleware
 app.use(bodyParser.json());
 
