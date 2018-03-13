@@ -41,7 +41,6 @@ class Move(SubInstruction):
     def __init__(self, nodeA, nodeB, exit=None):
         self.nodeA = nodeA
         self.nodeB = nodeB
-        self.success = True
         self.exit = exit
 
     def run(self):
