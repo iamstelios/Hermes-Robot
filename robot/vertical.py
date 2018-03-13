@@ -9,25 +9,26 @@ class LiftPos(IntEnum):
     BOTTOM = 0
     TOP = 100
 
-    SHELF_0 = 20
-    SHELF_0_UP = 37
+    SHELF_0 = 16
+    SHELF_0_UP = 32
     SHELF_1 = 51
     SHELF_1_UP = 65
     SHELF_2 = 83
     SHELF_2_UP = 95
 
 """
-Given a lift positon either returns the number of the Reed
-sensor at that location or None if there isn't one.
+Given a lift position either returns a pair of
+(Reed switch number, height range) if there is
+a sensor at that location or None if there isn't one.
 """
 # TODO add more sensors
 def get_reed_id(loc):
     if loc == LiftPos.SHELF_0:
-        return 0
+        return (0, int(TOP_MOTOR_POS/3))
     elif loc == LiftPos.SHELF_0_UP:
-        return 1
+        return (1, int(TOP_MOTOR_POS/8))
     elif loc == LiftPos.SHELF_1:
-        return 2
+        return (2, int(TOP_MOTOR_POS/4))
     else:
         return None
 
@@ -53,7 +54,7 @@ class VerticalMovementManager:
         # Initialize motor
         self._motor = MediumMotor(whereMotor)
         if not self._motor.connected:
-            raise Error("Medium motor at " + whereMotor + " not connected!")
+            raise ValueError("Medium motor at " + whereMotor + " not connected!")
         self._motor.stop_action = MediumMotor.STOP_ACTION_HOLD
         # Default speed is 0, setting this is necessary
         self._motor.speed_sp = 500
@@ -68,11 +69,11 @@ class VerticalMovementManager:
     """
     Assuming the lift is close to the given Reed switch, tries
     to position the lift in the middle of the switch.
-    reed - number of the Reed switch
+    reed - (Reed switch number, height range)
     """
     def move_to_switch(self, reed):
         # Size of the range to scan for switches in motor units
-        diff = int(TOP_MOTOR_POS/4)
+        diff = reed[1]
 
         init_pos_m = self._motor.position
 
@@ -91,7 +92,7 @@ class VerticalMovementManager:
             self._motor.run_to_rel_pos(position_sp = diff)
 
             while self._motor.is_running and not self._motor.is_stalled:
-                if self._sensors.read_reed(reed):
+                if self._sensors.read_reed(reed[0]):
                     # Expand the visibility range as far as possible
                     top = max(top, self._motor.position)
                     bot = min(bot, self._motor.position)

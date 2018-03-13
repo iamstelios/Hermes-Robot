@@ -93,6 +93,8 @@ requestRouter.post('/', function (req, res) {
                 request.action = "transfer";
                 request.dst = waitingRequest.dst;
                 delete request.itemCode;
+                request.title = "Transfer from " + request.src + " to " + request.dst;
+                
             }else{
                 request.dst = item.location;
                 request.level = item.level; 
