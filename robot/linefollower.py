@@ -38,6 +38,9 @@ kd = 0.3
 direction = 1
 junctionmarker = 1
 
+colour2num = {'r': 5, 'b': 2, 'g': 3, 'y': 4, 'bk': 1, 'w': 6, "br": 7}
+allColours = [5, 2, 3, 4, 7, 1]
+
 
 def steering(course, power):
     power_left = power_right = power
@@ -53,14 +56,14 @@ def steering(course, power):
     return int(power_left), int(power_right)
 
 
-def pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens, linesens, stopcolour):
+def pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens, linesens, stopcolours):
     linesens.mode = 'COL-REFLECT'
     coloursens.mode = 'COL-COLOR'
     lastError = error = integral = 0
     mLeft.run_direct()
     mRight.run_direct()
 
-    while coloursens.color != stopcolour:
+    while coloursens.color not in stopcolours:
         print(coloursens.color)
         refRead = linesens.value()
 
@@ -73,28 +76,48 @@ def pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens, linesens
         for (motor, pow) in zip((mLeft, mRight), steering(course, mPower)):
             motor.duty_cycle_sp = pow
         sleep(0.01)
+    sleep(0.25)
+    mRight.stop()
+    mLeft.stop()
+    return coloursens.color
 
 
-def hook(exitcolour):
+def hook(exitcolour, time=500):
     rounddirection = -direction
     # move right to catch line
     mRight.stop()
     mLeft.stop()
-    time = 500
     mLeft.run_timed(time_sp=time, speed_sp=100)
     mRight.run_timed(time_sp=time, speed_sp=250)
     sleep(time / 1000)
     # pid on inside
     pid(mPower, trg, kp, kd, ki, rounddirection, minRng, maxRng, coloursens=cRight, linesens=cLeft,
-        stopcolour=exitcolour)
-    time = 500
+        stopcolours=exitcolour)
     mLeft.run_timed(time_sp=time, speed_sp=250)
     mRight.run_timed(time_sp=time, speed_sp=100)
     sleep(time / 1000)
-    pid(mPower, trg, kp, kd, ki, minRng, maxRng, coloursens=cLeft, linesens=cRight,
-        stopcolour=junctionmarker)
+    pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens=cLeft, linesens=cRight,
+        stopcolours=[junctionmarker])
 
 
-def run():
-    pid(mPower, trg, kp, kd, ki, minRng, maxRng, coloursens=cLeft, linesens=cRight,
-        stopcolour=junctionmarker)
+def run(colour=None):
+    if colour == None:
+        pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens=cLeft, linesens=cRight,
+            stopcolours=[junctionmarker])
+    else:
+        c = colour2num[colour]
+
+        finishcolour = pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens=cLeft, linesens=cRight,
+                           stopcolours=allColours)
+
+        if finishcolour == colour2num['bk']:
+            pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens=cLeft, linesens=cRight,
+                stopcolours=allColours)
+
+        hook(c)
+        pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens=cLeft, linesens=cRight,
+            stopcolours=[junctionmarker])
+
+        if finishcolour != colour2num['bk']:
+            pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens=cLeft, linesens=cRight,
+                stopcolours=allColours)
