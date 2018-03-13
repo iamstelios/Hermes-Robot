@@ -13,7 +13,7 @@ class SubInstruction(object):
         raise NotImplementedError("opposite() should be implemented")
 
 class Move(SubInstruction):
-    # Move robot from node A to node B 
+    # Move robot from node A to node B
     # Nodes can be either workstations or junctions or the base
     # Robot will be facing the right direction when starting this
     # instruction (Node A -> Node B)
@@ -24,31 +24,28 @@ class Move(SubInstruction):
         from client import Position
         self.nodeA = nodeA
         self.nodeB = nodeB
-        if exit is not None:
-            self.exit = exit
-            self.junctionExit = True
-        else:
-            self.junctionExit = False
+        self.success = True
+        self.exit = exit
 
     def run(self):
-        # Exit parameter is the exit that the robot should take, 
+        # Exit parameter is the exit that the robot should take,
         # if robot is at the start of node A and it is a junction!
+        # "run" should only be called from the following combinations of nodes:
+        # junction to junction, workstation/base to junction, junction to workstation/base.
         print('Moving from %s to %s' % (self.nodeA.string, self.nodeB.string))
-
-        #TODO: WRITE CODE FOR MOVEMENT HERE!
-        sleep(wait_time)
-        print('Arrived at %s' % self.nodeB.string)
+        linefollower.run(self.exit)
         return self.nodeB
-    
-    def opposite(self):
-        from client import junction_endpoints
-        new_exit = None
-        if self.nodeB.isJunction:
-            # Find which exit to use
-            # r for red, g for green, b for blue, y for yellow
-            new_exit = [colour for colour, node in junction_endpoints[
-                self.nodeB.number].items() if node == self.nodeA.string][0]
-        return Move(self.nodeB,self.nodeA,new_exit)
+
+
+def opposite(self):
+    from client import junction_endpoints
+    new_exit = None
+    if self.nodeB.isJunction:
+        # Find which exit to use
+        # r for red, g for green, b for blue, y for yellow
+        new_exit = [colour for colour, node in junction_endpoints[
+            self.nodeB.number].items() if node == self.nodeA.string][0]
+    return Move(self.nodeB, self.nodeA, new_exit)
 
 class Reverse(SubInstruction):
     # Reverses the position of the robot 180 degrees
