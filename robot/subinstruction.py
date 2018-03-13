@@ -2,8 +2,13 @@
 
 #---------FOR PRESENTATION--------------
 from time import sleep
+from vertical import *
+from ev3dev.ev3 import *
 wait_time = 4
+v = VerticalMovementManager()
 #---------------------------------------
+# TODO: Initialize ev3 stuff
+
 
 class SubInstruction(object):
     """ Abstract class """
@@ -93,6 +98,7 @@ class BasePickUp(SubInstruction):
         print('Picking up box at level %d' % self.level)
 
         # raise grabber to shelf level
+
         v.move_to(self.level)
 
         # position robot inside the base
