@@ -1,11 +1,76 @@
 from time import sleep
+from math import sqrt
+from ring import RingBuf
 from ev3dev.ev3 import LargeMotor, ColorSensor
 
 
 mLeft = LargeMotor('outD')
 mRight = LargeMotor('outC')
-cLeft = ColorSensor('in3')
-cRight = ColorSensor('in4')
+
+class Color:
+    def __init__(self, r, g, b):
+        self._r = r
+        self._g = g
+        self._b = b
+
+    def __add__(self, other):
+        return Color(self._r + other._r, self._g + other._g, self._b + other._b)
+
+    def __sub__(self, other):
+        return Color(self._r - other._r, self._g - other._g, self._b - other._b)
+
+    def __div__(self, other):
+        if isinstance(other, Color):
+            raise ValueError("Cannot divide color by color.")
+
+        return Color(self._r / other, self._g / other, self._b / other)
+
+    """ Euclidean norm of the color in RGB space. """
+    def norm(self):
+        return sqrt(self._r * self._r + self._g * self._g + self._b * self._b)
+
+COLOR_VALS = {
+    ColorSensor.COLOR_WHITE: Color(349, 220, 288),
+    ColorSensor.COLOR_BLACK: Color(10, 7, 8),
+    ColorSensor.COLOR_RED: Color(329, 26, 30),
+    ColorSensor.COLOR_YELLOW: Color(386, 176, 62),
+    ColorSensor.COLOR_GREEN: Color(55, 170, 170) # TODO measure
+}
+
+class BetterColorSensor:
+    def __init__(self, inp):
+        self._sensor = ColorSensor(inp)
+        self._vals = RingBuf(Color(0,0,0), 4)
+        self._hijack_mode = False
+
+    def __setattr__(self, attr, val):
+        if attr == "mode":
+            if val == "COL-COLOR":
+                self._sensor.mode = "RGB-RAW"
+                self._hijack_mode = True
+            else:
+                self._sensor.mode = val
+                self._hijack_mode = False
+        else:
+            setattr(self._sensor, attr, val)
+
+    def __getattribute__(self, attr):
+        if attr == "color" and self._hijack_mode == True:
+            col = Color(*self._sensor.raw)
+            self._vals.push(col)
+            avg = self._vals.avg(4)
+
+            diffs = [ (name, (avg - val).norm()) for (name, val) in COLOR_VALS.items() ]
+            diffs = sorted(diffs, key = lambda p: p[1]) # Sort by distance from each color
+            return diffs[0][0]
+        else:
+            return getattr(self._sensor, attr)
+
+    def value(self, n=0):
+        return self._sensor.value(n)
+
+cLeft = BetterColorSensor('in3')
+cRight = BetterColorSensor('in4')
 
 mRight.polarity = 'inversed'
 mLeft.polarity = 'inversed'

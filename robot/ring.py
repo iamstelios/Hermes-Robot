@@ -15,8 +15,8 @@ class RingBuf:
     tp - the type of variable stored (e.g. 'f' for float)
     size - the size of the buffer
     """
-    def __init__(self, tp, size):
-        self._data = array.array(tp, [0]*size)
+    def __init__(self, init_val, size):
+        self._data = [init_val]*size
         self._size = size
         self._i = 0
 
