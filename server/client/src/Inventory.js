@@ -1,7 +1,10 @@
 import React, {Component} from 'react'
 import {
     Panel,
-    Button
+    Button,
+    Col,
+    Grid,
+    Row
 } from 'react-bootstrap'
 import {withAlert} from 'react-alert'
 import './App.css'
@@ -38,18 +41,67 @@ class Inventory extends Component {
             });
     }
 
-    handleSubmit(item, e) {
-        // show alert that request is being sent to server
-        this.props.alert.show(`Requesting retrieval of ${item.name}`, {
-            timeout: 2000,
-            type: 'info',
-            code: item.code,
-            onOpen: () => {
-                this.submitRetrieveRequest(item.code);
-            }
-        });
+    handleSubmit(item, reqType, e) {
+        switch (reqType) {
+            case "retrieve":
+                // show alert that request is being sent to server
+                this.props.alert.show(`Requesting retrieval of ${item.name}`, {
+                    timeout: 2000,
+                    type: 'info',
+                    code: item.code,
+                    onOpen: () => {
+                        this.submitRetrieveRequest(item.code);
+                    }
+                });
+                break;
+            case "store":
+                // show alert that request is being sent to server
+                this.props.alert.show(`Requesting retrieval of ${item.name}`, {
+                    timeout: 2000,
+                    type: 'info',
+                    code: item.code,
+                    onOpen: () => {
+                        this.submitStoreRequest(item.code);
+                    }
+                });
+                break;
+        }
+
 
         e.preventDefault();
+    }
+
+    submitStoreRequest(itemCode) {
+        fetch('/api/requests/', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({action: 'store', itemCode: itemCode, src: this.props.userId.toString()})
+        })
+            .then(response => {
+                if (!response.ok) {
+                    this.props.alert.show(`Request Failed`, {
+                        timeout: 2000,
+                        type: 'error',
+                        onOpen: () => {
+                            this.props.alert.alerts.find(a => a.options.code === itemCode).close()
+                        }
+                    });
+                }
+                return response
+            })
+            .then(r => r.json())
+            .then(r => {
+                this.props.alert.show(`Request Submitted (#${r.id})`, {
+                    timeout: 2000,
+                    type: 'success',
+                    onOpen: () => {
+                        this.props.alert.alerts.find(a => a.options.code === itemCode).close()
+                    }
+                });
+            });
     }
 
     submitRetrieveRequest(itemCode) {
@@ -59,7 +111,7 @@ class Inventory extends Component {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({action: 'retrieve', itemCode: itemCode, dst: '1'})
+            body: JSON.stringify({action: 'retrieve', itemCode: itemCode, dst: this.props.userId.toString()})
         })
             .then(response => {
                 if (!response.ok) {
@@ -86,23 +138,54 @@ class Inventory extends Component {
     }
 
     render() {
-        const listItems = this.state.inventory.map((item) => {
-            return (<li key={item.code}>
-                <Panel bsStyle="primary">
-                    <Panel.Heading>
-                        <Panel.Title componentClass="h3">Item code: {item.code}</Panel.Title>
-                    </Panel.Heading>
-                    <Panel.Body>
-                        <h4>{item.name}</h4>
-                        <Button onClick={(e) => this.handleSubmit(item, e)} bsStyle="primary" className="full-width">Request
-                            this item</Button>
-                    </Panel.Body>
-                </Panel>
-            </li>);
+        let inv = [];
+        let itemRows = [];
+        let colCount = 1;
+
+        if (window.innerWidth > 992) {
+            colCount = 2;
+        }
+
+        if (window.innerWidth > 1200) {
+            colCount = 3;
+        }
+
+        for (let i = 0; i < this.state.inventory.length; i += colCount) {
+            let row = [];
+            for (let j = 0; j < colCount && (i + j < this.state.inventory.length); j++) {
+                row.push(this.state.inventory[i + j]);
+            }
+            itemRows.push(row);
+        }
+
+        itemRows.forEach(row => {
+            inv.push(<Row>
+                {row.map(item => {
+                    return (<Col sm={12} md={6} lg={4}>
+                        <Panel bsStyle="primary">
+                            <Panel.Heading>
+                                <Panel.Title componentClass="h3">Item code: {item.code}{!item.inStorage && <span> (on loan)</span>}</Panel.Title>
+                            </Panel.Heading>
+                            <Panel.Body>
+                                <h4>{item.name}</h4>
+                                <Button onClick={(e) => this.handleSubmit(item, "retrieve", e)} className="half-width"
+                                        bsStyle="primary">
+                                    Retrieve
+                                </Button>
+                                <Button onClick={(e) => this.handleSubmit(item, "store", e)} className="half-width"
+                                        bsStyle="primary">
+                                    Store
+                                </Button>
+                            </Panel.Body>
+                        </Panel>
+                    </Col>)
+                })}
+            </Row>)
         });
-        return (<ul>
-            {listItems}
-        </ul>)
+
+        return (<Grid fluid={true}>
+            {inv}
+        </Grid>);
     }
 }
 
