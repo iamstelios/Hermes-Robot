@@ -44,13 +44,13 @@ last_pos = Position("0")
 # ================= HARDCODED MAP =====================
 
 # r for red, g for green, b for blue, y for yellow
-optimal_routes = [['b', 'r', 'g', 'g'], ['y', 'y', 'b', 'r']]
+optimal_routes = [['r', 'y', 'g', 'g'], ['r', 'r', 'g', 'y']]
 
 endpoint_junction_connection = ['J0', 'J0', 'J1', 'J1']
 
 junction_endpoints = [
-    {"r": "1", "g": "J1", "b": "0"},
-    {"r": "3", "b": "2", "y": "J0"},
+    {"r": "0", "g": "J1", "y": "1"},
+    {"y": "3", "g": "2", "r": "J0"},
 ]
 
 
