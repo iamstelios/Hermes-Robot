@@ -39,8 +39,8 @@ direction = 1
 junctionmarker = 1
 
 colour2num = {'r': 5, 'b': 2, 'g': 3, 'y': 4, 'bk': 1, 'w': 6, "br": 7}
-allColours = [5, 2, 3, 4, 7, 1]
-
+allColours = [5, 3, 4, 7, 1]
+allColoursNotBlack = [5, 3, 4, 7]
 
 def steering(course, power):
     power_left = power_right = power
@@ -57,14 +57,16 @@ def steering(course, power):
 
 
 def pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens, linesens, stopcolours):
+    print("PID: stop " + str(stopcolours))
     linesens.mode = 'COL-REFLECT'
     coloursens.mode = 'COL-COLOR'
     lastError = error = integral = 0
     mLeft.run_direct()
     mRight.run_direct()
+    
+    colour = -1
 
-    while coloursens.color not in stopcolours:
-        print(coloursens.color)
+    while colour not in stopcolours:
         refRead = linesens.value()
 
         error = trg - (100 * (refRead - minRng) / (maxRng - minRng))
@@ -75,14 +77,17 @@ def pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens, linesens
 
         for (motor, pow) in zip((mLeft, mRight), steering(course, mPower)):
             motor.duty_cycle_sp = pow
+        colour = coloursens.color
+        print("colour={}".format(colour)) 
         sleep(0.01)
     sleep(0.25)
     mRight.stop()
     mLeft.stop()
-    return coloursens.color
+    return colour
 
 
 def hook(exitcolour, time=500):
+    print("HOOK: exit " + str(exitcolour))
     rounddirection = -direction
     # move right to catch line
     mRight.stop()
@@ -92,7 +97,7 @@ def hook(exitcolour, time=500):
     sleep(time / 1000)
     # pid on inside
     pid(mPower, trg, kp, kd, ki, rounddirection, minRng, maxRng, coloursens=cRight, linesens=cLeft,
-        stopcolours=exitcolour)
+        stopcolours=[exitcolour])
     mLeft.run_timed(time_sp=time, speed_sp=250)
     mRight.run_timed(time_sp=time, speed_sp=100)
     sleep(time / 1000)
@@ -109,10 +114,10 @@ def run(colour=None):
 
         finishcolour = pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens=cLeft, linesens=cRight,
                            stopcolours=allColours)
-
+        print(finishcolour)
         if finishcolour == colour2num['bk']:
             pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens=cLeft, linesens=cRight,
-                stopcolours=allColours)
+                stopcolours=allColoursNotBlack)
 
         hook(c)
         pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens=cLeft, linesens=cRight,
