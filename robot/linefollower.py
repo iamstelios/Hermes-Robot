@@ -1,5 +1,6 @@
 from time import sleep
-from ev3dev.auto import *
+from ev3dev.ev3 import LargeMotor, ColorSensor
+
 
 mLeft = LargeMotor('outD')
 mRight = LargeMotor('outC')
@@ -9,22 +10,94 @@ cRight = ColorSensor('in4')
 mRight.polarity = 'inversed'
 mLeft.polarity = 'inversed'
 
-mPower = 75
+class PidRunner:
+    def _steering1(self, course):
+        power_left = power_right = self.power
+        s = (50 - abs(float(course))) / 50
+        if course >= 0:
+            power_right *= s
+            if course > 100:
+                power_right = -self.power
+        else:
+            power_left *= s
+            if course < -100:
+                power_left = -self.power
+        return (int(power_left), int(power_right))
 
-# min and max reflection
-minRng = 1
-maxRng = 88
+    def _steering2(self, course):
+        if course >= 0:
+            if course > 100:
+                power_right = 0
+                power_left = self.power
+            else:
+                power_left = self.power
+                power_right = self.power - ((self.power * course) / 100)
+        else:
+            if course < -100:
+                power_left = 0
+                power_right = self.power
+            else:
+                power_right = self.power
+                power_left = self.power + ((self.power * course) / 100)
+        return (int(power_left), int(power_right))
 
-#
-trg = 55
+    def __init__(self, Kp, Ki, Kd, minRng, maxRng, trg, power, alt_steer=False):
+        self.Kp = Kp
+        self.Ki = Ki
+        self.Kd = Kd
+        self.minRng = minRng
+        self.maxRng = maxRng
+        self.trg = trg
+        self.power = power
+        self.steering = self._steering2 if alt_steer else self._steering1
 
-# PID variables
-kp = float(0.6)
-ki = float(0.05)
-kd = 0.3
+    """
+    Runs the robot with these PID parameters until one of stopcolours is seen.
+    direction - -1 if sensor on left side, 1 if on right side (for black line, white background)
+    coloursens - colour sensor object
+    linesens - line sensor object
+    stopcolours - array of colours to stop at
+    """
+    def follow_line(self, direction, coloursens, linesens, stopcolours):
+        print("PidRunner.follow_line(direction={},stopcolours={})".format(direction, stopcolours))
+
+        # Coerce into list to avoid annoying errors
+        if not isinstance(stopcolours, list):
+            stopcolours = [stopcolours]
+
+        linesens.mode = 'COL-REFLECT'
+        coloursens.mode = 'COL-COLOR'
+        lastError = error = integral = 0
+        mLeft.run_direct()
+        mRight.run_direct()
+
+        colour = -1
+
+        while colour not in stopcolours:
+            refRead = linesens.value()
+
+            error = trg - (100 * (refRead - self.minRng) / (self.maxRng - self.minRng))
+            derivative = error - lastError
+            lastError = error
+            integral = float(0.5) * integral + error
+            course = (kp * error + kd * derivative + ki * integral) * direction
+
+            for (motor, pow) in zip((mLeft, mRight), self.steering(course)):
+                motor.duty_cycle_sp = pow
+            colour = coloursens.color
+            print("colour={}".format(colour))
+
+        sleep(0.25)
+        mRight.stop()
+        mLeft.stop()
+        return colour
+
+linePid = PidRunner(0.65, 0.03, 0, 11, 66, 55, 50)
+roundaboutPid = PidRunner(0.6, 0.05, 0.3, 1, 88, 55, 75)
 
 # For black line white background:
 # -1 if sensor on left side, 1 if on right side
+direction = 1
 
 # 0: No color
 # 1: Black
@@ -34,104 +107,49 @@ kd = 0.3
 # 5: Red
 # 6: White
 # 7: Brown
-
-direction = 1
-junctionmarker = 1
-
-colour2num = {'r': 5, 'b': 2, 'g': 3, 'y': 4, 'bk': 1, 'w': 6, "br": 7}
+colour2num = {'r': 5, 'g': 3, 'y': 4, 'bk': 1, 'w': 6, 'br': 7}
 allColours = [5, 3, 4, 7, 1]
 allColoursNotBlack = [5, 3, 4, 7]
-
-def steering(course, power):
-    power_left = power_right = power
-    s = (50 - abs(float(course))) / 50
-    if course >= 0:
-        power_right *= s
-        if course > 100:
-            power_right = - power
-    else:
-        power_left *= s
-        if course < -100:
-            power_left = - power
-    return int(power_left), int(power_right)
+junctionmarker = colour2num['bk']
 
 
-def pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens, linesens, stopcolours):
-    print("PID: stop " + str(stopcolours))
-    linesens.mode = 'COL-REFLECT'
-    coloursens.mode = 'COL-COLOR'
-    lastError = error = integral = 0
-    mLeft.run_direct()
-    mRight.run_direct()
-    
-    colour = -1
-
-    while colour not in stopcolours:
-        refRead = linesens.value()
-
-        error = trg - (100 * (refRead - minRng) / (maxRng - minRng))
-        derivative = error - lastError
-        lastError = error
-        integral = float(0.5) * integral + error
-        course = (kp * error + kd * derivative + ki * integral) * direction
-
-        for (motor, pow) in zip((mLeft, mRight), steering(course, mPower)):
-            motor.duty_cycle_sp = pow
-        colour = coloursens.color
-        print("colour={}".format(colour)) 
-        sleep(0.01)
-    sleep(0.25)
-    mRight.stop()
-    mLeft.stop()
-    return colour
-
-
+""" Merry go round. """
 def hook(exitcolour, time=500):
-    print("HOOK: exit " + str(exitcolour))
+    print("hook(exitcolour={})".format(exitcolour))
     rounddirection = -direction
     # move right to catch line
     mRight.stop()
     mLeft.stop()
     mLeft.run_timed(time_sp=time, speed_sp=100)
     mRight.run_timed(time_sp=time, speed_sp=250)
-    sleep(time / 1000)
+    mLeft.wait_until_not_moving()
+
     # pid on inside
-    pid(mPower, trg, kp, kd, ki, rounddirection, minRng, maxRng, coloursens=cRight, linesens=cLeft,
-        stopcolours=[exitcolour])
+    roundaboutPid.follow_line(rounddirection, coloursens=cRight, linesens=cLeft, stopcolours=[exitcolour])
+
     mLeft.run_timed(time_sp=time, speed_sp=250)
     mRight.run_timed(time_sp=time, speed_sp=100)
-    sleep(time / 1000)
-    pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens=cLeft, linesens=cRight,
-        stopcolours=[junctionmarker])
+    mLeft.wait_until_not_moving()
 
+    roundaboutPid.follow_line(direction, coloursens=cLeft, linesens=cRight, stopcolours=[junctionmarker])
 
 def run(colour=None):
     if colour == None:
-        pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens=cLeft, linesens=cRight,
-            stopcolours=[junctionmarker])
+        linePid.follow_line(direction, coloursens=cLeft, linesens=cRight, stopcolours=[junctionMarker])
     else:
         c = colour2num[colour]
 
-        finishcolour = pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens=cLeft, linesens=cRight,
-                           stopcolours=allColours)
-        print(finishcolour)
+        finishcolour = linePid.follow_line(direction, coloursens=cLeft, linesens=cRight, stopcolours=allColours)
+        print("finishcolour={}".format(finishcolour))
         if finishcolour == colour2num['bk']:
-            pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens=cLeft, linesens=cRight,
-                stopcolours=allColoursNotBlack)
+            linePid.follow_line(direction, coloursens=cLeft, linesens=cRight, stopcolours=allColoursNotBlack)
 
         hook(c)
-        pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens=cLeft, linesens=cRight,
-            stopcolours=[junctionmarker])
+        linePid.follow_line(direction, coloursens=cLeft, linesens=cRight, stopcolours=[junctionmarker])
 
         if finishcolour != colour2num['bk']:
-            pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens=cLeft, linesens=cRight,
-                stopcolours=allColours)
-
+            linePid.follow_line(direction, coloursens=cLeft, linesens=cRight, stopcolours=allColours)
 
 def dock():
-    mPower = 50
-    kp = 0.65
-    ki = 0.3
-    kd = 0
-    pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens=cLeft, linesens=cRight,
-        stopcolours=[5])
+    dockPid = PidRunner(0.65, 0.3, 0, linePid.minRng, linePid.maxRng, linePid.trg, 50)
+    dockPid.follow_line(direction, coloursens=cLeft, linesens=cRight, stopcolours=[colour2num['r']])
