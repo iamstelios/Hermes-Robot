@@ -1,6 +1,7 @@
 from time import sleep
 from math import sqrt
 from ring import RingBuf
+import colorsys
 from ev3dev.ev3 import LargeMotor, ColorSensor
 
 
@@ -19,58 +20,69 @@ class Color:
     def __sub__(self, other):
         return Color(self._r - other._r, self._g - other._g, self._b - other._b)
 
-    def __div__(self, other):
+    def __mul__(self, other):
         if isinstance(other, Color):
-            raise ValueError("Cannot divide color by color.")
+            return Color(self._r * other._r, self._g * other._g, self._b * other._b)
+
+        return Color(self._r * other, self._g * other, self._b * other)
+
+    def __truediv__(self, other):
+        if isinstance(other, Color):
+            return Color(self._r / other._r, self._g / other._g, self._b / other._b)
 
         return Color(self._r / other, self._g / other, self._b / other)
+
+    def __str__(self):
+        return "({}, {}, {})".format(self._r, self._g, self._b)
 
     """ Euclidean norm of the color in RGB space. """
     def norm(self):
         return sqrt(self._r * self._r + self._g * self._g + self._b * self._b)
 
+    def unit(self):
+        return self / self.norm()
+
+    def rgb_to_hsv(self):
+        v = self * (255 / 1020)
+        return Color(*colorsys.rgb_to_hsv(self._r, self._g, self._b))
+
 COLOR_VALS = {
-    ColorSensor.COLOR_WHITE: Color(349, 220, 288),
-    ColorSensor.COLOR_BLACK: Color(10, 7, 8),
-    ColorSensor.COLOR_RED: Color(329, 26, 30),
-    ColorSensor.COLOR_YELLOW: Color(386, 176, 62),
-    ColorSensor.COLOR_GREEN: Color(55, 170, 170) # TODO measure
+    ColorSensor.COLOR_WHITE: Color(330, 330, 330).rgb_to_hsv(),
+    ColorSensor.COLOR_BLACK: Color(10, 7, 8).rgb_to_hsv(),
+    ColorSensor.COLOR_RED: Color(329, 26, 30).rgb_to_hsv(),
+    ColorSensor.COLOR_YELLOW: Color(386, 176, 62).rgb_to_hsv(),
+    ColorSensor.COLOR_GREEN: Color(55, 170, 170).rgb_to_hsv() # TODO measure
 }
 
-class BetterColorSensor:
+class BetterColorSensor(ColorSensor):
     def __init__(self, inp):
-        self._sensor = ColorSensor(inp)
-        self._vals = RingBuf(Color(0,0,0), 4)
-        self._hijack_mode = False
+        super().__init__(inp)
+        self._vals = RingBuf(Color(0,0,0), 3)
 
     def __setattr__(self, attr, val):
-        if attr == "mode":
-            if val == "COL-COLOR":
-                self._sensor.mode = "RGB-RAW"
-                self._hijack_mode = True
-            else:
-                self._sensor.mode = val
-                self._hijack_mode = False
+        if attr == "mode" and val == "COL-COLOR":
+            super().__setattr__("mode", "RGB-RAW")
         else:
-            setattr(self._sensor, attr, val)
+            super().__setattr__(attr, val)
 
     def __getattribute__(self, attr):
-        if attr == "color" and self._hijack_mode == True:
-            col = Color(*self._sensor.raw)
-            self._vals.push(col)
-            avg = self._vals.avg(4)
+        if attr == "color":
+            avg = Color(*self.raw).rgb_to_hsv()
+           #for i in range(0, 3):
+           #    self._vals.push(Color(*self.raw))
 
-            diffs = [ (name, (avg - val).norm()) for (name, val) in COLOR_VALS.items() ]
+           #avg = self._vals.avg(3)
+            print(avg)
+
+            diffs = [ (name, ((avg - val) * Color(0.8, 0.1, 0.1)).norm()) for (name, val) in COLOR_VALS.items() ]
             diffs = sorted(diffs, key = lambda p: p[1]) # Sort by distance from each color
+            print(diffs)
             return diffs[0][0]
         else:
-            return getattr(self._sensor, attr)
+            return super().__getattribute__(attr)
 
-    def value(self, n=0):
-        return self._sensor.value(n)
-
-cLeft = BetterColorSensor('in3')
-cRight = BetterColorSensor('in4')
+cLeft = ColorSensor('in3')
+cRight = ColorSensor('in4')
 
 mRight.polarity = 'inversed'
 mLeft.polarity = 'inversed'
@@ -133,31 +145,51 @@ class PidRunner:
         linesens.mode = 'COL-REFLECT'
         coloursens.mode = 'COL-COLOR'
         lastError = error = integral = 0
-        mLeft.run_direct()
-        mRight.run_direct()
 
-        colour = -1
+        colour = None
+        done = False
 
-        while colour not in stopcolours:
-            refRead = linesens.value()
-
-            error = self.trg - (100 * (refRead - self.minRng) / (self.maxRng - self.minRng))
-            derivative = error - lastError
-            lastError = error
-            integral = float(0.5) * integral + error
-            course = (self.Kp * error + self.Kd * derivative + self.Ki * integral) * direction
-
-            for (motor, pow) in zip((mLeft, mRight), self.steering(course)):
-                motor.duty_cycle_sp = pow
+        while not done:
             colour = coloursens.color
-            print("colour={}".format(colour))
+
+            mLeft.run_direct()
+            mRight.run_direct()
+
+            while colour not in stopcolours:
+                refRead = linesens.value()
+
+                error = self.trg - (100 * (refRead - self.minRng) / (self.maxRng - self.minRng))
+                derivative = error - lastError
+                lastError = error
+                integral = float(0.5) * integral + error
+                course = (self.Kp * error + self.Kd * derivative + self.Ki * integral) * direction
+
+                for (motor, pow) in zip((mLeft, mRight), self.steering(course)):
+                    motor.duty_cycle_sp = pow
+                colour = coloursens.color
+
+            mRight.stop()
+            mLeft.stop()
+            
+            # Check again for colour
+            done = True
+            for i in range(0, 5):
+                if colour != coloursens.color:
+                    done = False
+                    break
+        
+        # Move forward a bit
+        for motor in (mLeft, mRight):
+            motor.run_direct()
+            motor.duty_cycle_sp = self.power
 
         sleep(0.25)
-        mRight.stop()
-        mLeft.stop()
+        for motor in (mLeft, mRight):
+            motor.stop()
+
         return colour
 
-linePid = PidRunner(0.60, 0.03, 0.1, 11, 66, 55, 60)
+linePid = PidRunner(0.55, 0.02, 0.05, 11, 66, 55, 60)
 roundaboutPid = PidRunner(0.6, 0.05, 0.3, 1, 88, 55, 75)
 
 # For black line white background:
@@ -189,11 +221,9 @@ def hook(exitcolour, time=600):
     mLeft.run_timed(time_sp=time, speed_sp=-200)
     mRight.run_timed(time_sp=time, speed_sp=200)
     mLeft.wait_until_not_moving()
-    input("CONT")
 
     # pid on inside
     roundaboutPid.follow_line(rounddirection, coloursens=cRight, linesens=cLeft, stopcolours=[exitcolour])
-    input("CONT")
 
     # turn left
     mLeft.run_timed(time_sp=time, speed_sp=200)
@@ -207,16 +237,11 @@ def run(colour=None):
         colour = colour2num[colour]
 
         finishcolour = linePid.follow_line(direction, coloursens=cLeft, linesens=cRight, stopcolours=allColours)
-        print("finishcolour={}".format(finishcolour))
-        input("CONT")
         if finishcolour == colour2num['bk']:
             linePid.follow_line(direction, coloursens=cLeft, linesens=cRight, stopcolours=allColoursNotBlack)
-            input("CONT")
 
         hook(colour)
-        input("CONT")
         linePid.follow_line(direction, coloursens=cLeft, linesens=cRight, stopcolours = [junctionMarker])
-        input("CONT")
 
         if finishcolour != colour2num['bk']:
             linePid.follow_line(direction, coloursens=cLeft, linesens=cRight, stopcolours=allColours)

@@ -46,8 +46,8 @@ class RingBuf:
     def avg(self, n):
         if n < 1:
             raise ValueError("Must use at least one value.")
-        avg = 0
-        for i in range(0, n):
+        avg = self.get(0)
+        for i in range(1, n):
             avg += self.get(i)
 
         return avg / n
