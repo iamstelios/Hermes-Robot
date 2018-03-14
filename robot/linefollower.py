@@ -126,3 +126,12 @@ def run(colour=None):
         if finishcolour != colour2num['bk']:
             pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens=cLeft, linesens=cRight,
                 stopcolours=allColours)
+
+
+def dock():
+    mPower = 50
+    kp = 0.65
+    ki = 0.3
+    kd = 0
+    pid(mPower, trg, kp, kd, ki, direction, minRng, maxRng, coloursens=cLeft, linesens=cRight,
+        stopcolours=[5])
