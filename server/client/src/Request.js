@@ -92,9 +92,13 @@ class ProcessingRequest extends Component {
             progress
         } = this.props.request;
 
+        console.log(this.props.request);
+
         let title = "...";
+        let emptyBox = false;
         if (requestFetch.fulfilled) {
             title = requestFetch.value.title;
+            emptyBox = requestFetch.value.emptyBox;
         }
 
         let percentageProgress = 0;
@@ -112,7 +116,7 @@ class ProcessingRequest extends Component {
         console.log(this.state);
         return (<Panel>
             <Panel.Heading>
-                <Panel.Title componentClass="h3">{title}&nbsp;(#{id})
+                <Panel.Title componentClass="h3">{!emptyBox && title}{emptyBox && <span>Retrieving empty box for your new item</span>}&nbsp;(#{id})
                 </Panel.Title>
             </Panel.Heading>
             <Panel.Body>
@@ -126,9 +130,9 @@ class ProcessingRequest extends Component {
                     position !== undefined &&
                     <p>{message}</p>
                 }
-                <ButtonGroup>
+                {!emptyBox && <ButtonGroup>
                     <Button onClick={() => this.cancelRequest(id)}>Cancel</Button>
-                </ButtonGroup>
+                </ButtonGroup>}
             </Panel.Body>
         </Panel>);
     }

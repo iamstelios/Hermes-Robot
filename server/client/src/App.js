@@ -23,18 +23,27 @@ class App extends Component {
     constructor(props, context) {
         super(props);
         this.state = {
-            userId: 1
+            userId: 1,
+            value: ""
         };
+
+        this.handleChange = this.handleChange.bind(this);
+        this.handleSubmit = this.handleSubmit.bind(this);
     }
 
-    handSubmit() {
+
+    handleChange(e) {
+        this.setState({value: e.target.value});
+    }
+
+    handleSubmit(e) {
         fetch('/api/inventory/', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
                 'Requestor': 'user',
-                'User': 1
+                'User': this.state.userId
             },
             body: JSON.stringify({name: this.state.value})
         })
@@ -49,10 +58,18 @@ class App extends Component {
             })
             .then(r => r.json())
             .then(r => {
-                this.props.alert.show(`Requesting box...`, {
-                    timeout: 2000,
-                    type: 'success'
-                });
+                console.log(r);
+                if(r.errors !== undefined) {
+                    this.props.alert.show(`Error: ${r.errors[0]}`, {
+                        timeout: 2000,
+                        type: 'error'
+                    });
+                } else {
+                    this.props.alert.show(`Requesting box...`, {
+                        timeout: 2000,
+                        type: 'success'
+                    });
+                }
             });
     }
 
