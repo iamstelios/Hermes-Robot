@@ -1,7 +1,10 @@
 import React, {Component} from 'react'
 import {
     Panel,
-    Button
+    Button,
+    Col,
+    Grid,
+    Row
 } from 'react-bootstrap'
 import {withAlert} from 'react-alert'
 import './App.css'
@@ -86,23 +89,52 @@ class Inventory extends Component {
     }
 
     render() {
-        const listItems = this.state.inventory.map((item) => {
-            return (<li key={item.code}>
-                <Panel bsStyle="primary">
-                    <Panel.Heading>
-                        <Panel.Title componentClass="h3">Item code: {item.code}</Panel.Title>
-                    </Panel.Heading>
-                    <Panel.Body>
-                        <h4>{item.name}</h4>
-                        <Button onClick={(e) => this.handleSubmit(item, e)} bsStyle="primary" className="full-width">Request
-                            this item</Button>
-                    </Panel.Body>
-                </Panel>
-            </li>);
+        let inv = [];
+        let itemRows = [];
+        let colCount = 1;
+
+        if (window.innerWidth > 992) {
+            colCount = 2;
+        }
+
+        if (window.innerWidth > 1200) {
+            colCount = 3;
+        }
+
+        for (let i = 0; i < this.state.inventory.length; i += colCount) {
+            let row = [];
+            for (let j = 0; j < colCount && (i + j < this.state.inventory.length); j++) {
+                row.push(this.state.inventory[i + j]);
+            }
+            itemRows.push(row);
+        }
+
+        itemRows.forEach(row => {
+            inv.push(<Row>
+                {row.map(item => {
+                    return (<Col sm={12} md={6} lg={4}>
+                        <Panel bsStyle="primary">
+                            <Panel.Heading>
+                                <Panel.Title componentClass="h3">Item code: {item.code}</Panel.Title>
+                            </Panel.Heading>
+                            <Panel.Body>
+                                <h4>{item.name}</h4>
+                                <Button onClick={(e) => this.handleSubmit(item, e)} className="half-width" bsStyle="primary">
+                                    Retrieve
+                                </Button>
+                                <Button onClick={(e) => this.handleSubmit(item, e)} className="half-width" bsStyle="primary">
+                                    Store
+                                </Button>
+                            </Panel.Body>
+                        </Panel>
+                    </Col>)
+                })}
+            </Row>)
         });
-        return (<ul>
-            {listItems}
-        </ul>)
+
+        return (<Grid fluid={true}>
+            {inv}
+        </Grid>);
     }
 }
 

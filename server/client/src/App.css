@@ -37,6 +37,11 @@
 .full-width {
     width: 100%;
 }
+.half-width {
+    width: 45%;
+    margin-left: 2.5%;
+    margin-right: 2.5%;
+}
 
 .RequestPane ul {
     list-style-type: none;
