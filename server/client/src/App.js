@@ -8,6 +8,10 @@ import {
     DropdownButton,
     MenuItem,
     ButtonToolbar,
+    FormGroup,
+    ControlLabel,
+    FormControl,
+    Well,
     Button
 } from 'react-bootstrap'
 import {withAlert} from 'react-alert'
@@ -21,6 +25,35 @@ class App extends Component {
         this.state = {
             userId: 1
         };
+    }
+
+    handSubmit() {
+        fetch('/api/inventory/', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Requestor': 'user',
+                'User': 1
+            },
+            body: JSON.stringify({name: this.state.value})
+        })
+            .then(response => {
+                if (!response.ok) {
+                    this.props.alert.show(`Failed to add item`, {
+                        timeout: 2000,
+                        type: 'error'
+                    });
+                }
+                return response
+            })
+            .then(r => r.json())
+            .then(r => {
+                this.props.alert.show(`Requesting box...`, {
+                    timeout: 2000,
+                    type: 'success'
+                });
+            });
     }
 
     render() {
@@ -43,8 +76,36 @@ class App extends Component {
                         <Col className="App-pane App-left-pane" sm={7} lg={9}>
                             <Tabs defaultActiveKey={1} id="uncontrolled-tab-example">
                                 <Tab eventKey={1} title="Browse Inventory">
-                                    <Inventory/></Tab>
-                                <Tab eventKey={2} title="Map" disabled="disabled"></Tab>
+                                    <h1>Inventory</h1>
+                                    <hr/>
+                                    <Inventory/>
+                                </Tab>
+                                <Tab eventKey={2} title="Add item">
+                                    <h1>Store an new item to the inventory...</h1>
+                                    <hr/>
+                                    <Well bsSize="large">
+                                        <form>
+                                            <FormGroup
+                                                controlId="formBasicText"
+                                            >
+                                                <ControlLabel>Item name:</ControlLabel>
+                                                <FormControl
+                                                    type="text"
+                                                    value={this.state.value}
+                                                    placeholder="Enter name"
+                                                    onChange={this.handleChange}
+                                                />
+                                            </FormGroup>
+                                            <Button onClick={(e) => this.handleSubmit(e)} className="full-width"
+                                                    bsStyle="primary">
+                                                Request storage box for item
+                                            </Button>
+                                        </form>
+                                    </Well>
+                                </Tab>
+                                <Tab eventKey={3} title="Map">
+                                    <canvas id="map" width="1000" height="600"></canvas>
+                                </Tab>
                             </Tabs>
                         </Col>
                         <Col className="App-pane App-right-pane" sm={5} lg={3}>
