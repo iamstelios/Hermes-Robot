@@ -76,11 +76,11 @@ class PidRunner:
         while colour not in stopcolours:
             refRead = linesens.value()
 
-            error = trg - (100 * (refRead - self.minRng) / (self.maxRng - self.minRng))
+            error = self.trg - (100 * (refRead - self.minRng) / (self.maxRng - self.minRng))
             derivative = error - lastError
             lastError = error
             integral = float(0.5) * integral + error
-            course = (kp * error + kd * derivative + ki * integral) * direction
+            course = (self.Kp * error + self.Kd * derivative + self.Ki * integral) * direction
 
             for (motor, pow) in zip((mLeft, mRight), self.steering(course)):
                 motor.duty_cycle_sp = pow
@@ -92,7 +92,7 @@ class PidRunner:
         mLeft.stop()
         return colour
 
-linePid = PidRunner(0.65, 0.03, 0, 11, 66, 55, 50)
+linePid = PidRunner(0.60, 0.03, 0.1, 11, 66, 55, 60)
 roundaboutPid = PidRunner(0.6, 0.05, 0.3, 1, 88, 55, 75)
 
 # For black line white background:
@@ -110,42 +110,48 @@ direction = 1
 colour2num = {'r': 5, 'g': 3, 'y': 4, 'bk': 1, 'w': 6, 'br': 7}
 allColours = [5, 3, 4, 7, 1]
 allColoursNotBlack = [5, 3, 4, 7]
-junctionmarker = colour2num['bk']
+junctionMarker = colour2num['bk']
 
 
 """ Merry go round. """
-def hook(exitcolour, time=500):
+def hook(exitcolour, time=600):
     print("hook(exitcolour={})".format(exitcolour))
     rounddirection = -direction
+
     # move right to catch line
     mRight.stop()
     mLeft.stop()
-    mLeft.run_timed(time_sp=time, speed_sp=100)
-    mRight.run_timed(time_sp=time, speed_sp=250)
+    mLeft.run_timed(time_sp=time, speed_sp=-200)
+    mRight.run_timed(time_sp=time, speed_sp=200)
     mLeft.wait_until_not_moving()
+    input("CONT")
 
     # pid on inside
     roundaboutPid.follow_line(rounddirection, coloursens=cRight, linesens=cLeft, stopcolours=[exitcolour])
+    input("CONT")
 
-    mLeft.run_timed(time_sp=time, speed_sp=250)
-    mRight.run_timed(time_sp=time, speed_sp=100)
+    # turn left
+    mLeft.run_timed(time_sp=time, speed_sp=200)
+    mRight.run_timed(time_sp=time, speed_sp=-200)
     mLeft.wait_until_not_moving()
-
-    roundaboutPid.follow_line(direction, coloursens=cLeft, linesens=cRight, stopcolours=[junctionmarker])
 
 def run(colour=None):
     if colour == None:
         linePid.follow_line(direction, coloursens=cLeft, linesens=cRight, stopcolours=[junctionMarker])
     else:
-        c = colour2num[colour]
+        colour = colour2num[colour]
 
         finishcolour = linePid.follow_line(direction, coloursens=cLeft, linesens=cRight, stopcolours=allColours)
         print("finishcolour={}".format(finishcolour))
+        input("CONT")
         if finishcolour == colour2num['bk']:
             linePid.follow_line(direction, coloursens=cLeft, linesens=cRight, stopcolours=allColoursNotBlack)
+            input("CONT")
 
-        hook(c)
-        linePid.follow_line(direction, coloursens=cLeft, linesens=cRight, stopcolours=[junctionmarker])
+        hook(colour)
+        input("CONT")
+        linePid.follow_line(direction, coloursens=cLeft, linesens=cRight, stopcolours = [junctionMarker])
+        input("CONT")
 
         if finishcolour != colour2num['bk']:
             linePid.follow_line(direction, coloursens=cLeft, linesens=cRight, stopcolours=allColours)
