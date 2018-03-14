@@ -78,7 +78,7 @@ class App extends Component {
                                 <Tab eventKey={1} title="Browse Inventory">
                                     <h1>Inventory</h1>
                                     <hr/>
-                                    <Inventory/>
+                                    <Inventory userId={this.state.userId}/>
                                 </Tab>
                                 <Tab eventKey={2} title="Add item">
                                     <h1>Store an new item to the inventory...</h1>
