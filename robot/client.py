@@ -8,11 +8,14 @@ import re
 from ev3dev.ev3 import Sound
 from collections import deque
 from subinstruction import *
-
+import argparse
 
 # ================= HARDCODED MAP =====================
 
 # r for red, g for green, b for blue, y for yellow
+
+bases = set([0])
+
 optimal_routes = [['r', 'y', 'g', 'g'], ['r', 'r', 'g', 'y']]
 
 endpoint_junction_connection = ['J0', 'J0', 'J1', 'J1']
@@ -306,6 +309,7 @@ def action_caller(instruction):
 @asyncio.coroutine
 def handler(ip):
     print("STARTING")
+    print("POSITION: %d" % last_pos.string)
     try:
         websocket = yield from websockets.connect("ws://%s:8000/" % ip)
     except OSError:
@@ -390,21 +394,30 @@ def handler(ip):
     yield from websocket.close()
 
 def main():
-    # Default ip address
-    # for windows
-    # ip = "192.168.137.1"
-    # localhost
-    ip = "127.0.0.1"
-    if (len(sys.argv) > 1):
-        ip = sys.argv[1]
-        # Check if the arguement given is a well defined ip address
-        pattern = re.compile("\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}")
-        test = pattern.match(ip)
-        if (not test):
-            print("Unacceptable ip address given for the server")
-            return
+    # Parse arguements
+    parser = argparse.ArgumentParser(description='Robot Parameters')
+    parser.add_argument('--ip', type=str, default = "127.0.0.1",
+                   help='ip address of the server')
+    parser.add_argument('--start', type=str, default="0",
+                   help='starting position of robot')
+
+    args = parser.parse_args()
+    ip = args.ip
+    # Check if ip is correctly structured 
+    pattern = re.compile("\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}")
+    test = pattern.match(ip)
+    if (not test):
+        print("Unacceptable ip address given for the server")
+        return
+    pattern = re.compile("^\d+$")
+    test = pattern.match(args.start)
+    if(not test):
+        print("Starting position should be an integer")
+        return
+    global last_pos
+    last_pos = Position(args.start)
 
     asyncio.get_event_loop().run_until_complete(handler(ip))
-
+    
 if __name__ == "__main__":
     main()

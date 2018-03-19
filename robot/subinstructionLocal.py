@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from client import Position, junction_endpoints
+from clientLocal import Position, junction_endpoints
 
 #---------FOR PRESENTATION--------------
 from time import sleep
