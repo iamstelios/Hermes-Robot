@@ -6,7 +6,7 @@ from vertical import *
 from ev3dev.ev3 import *
 import linefollower
 
-wait_time = 4
+wait_time = 0
 v = VerticalMovementManager()
 #---------------------------------------
 
@@ -37,21 +37,17 @@ class Move(SubInstruction):
     def __str__(self):
         return 'Move(%s,%s)' % (self.nodeA, self.nodeB)
 
-    # If node B is a junction, the robot should stop before entering the juction
-    # Thus if the opposite is needed no exit input is needed to reach back node A.
+    # If node B is a junction, the robot will stop before entering the juction
     def __init__(self, nodeA, nodeB):
         self.nodeA = nodeA
         self.nodeB = nodeB
 
     def run(self):
-        # Exit parameter is the exit that the robot should take,
-        # if robot is at the start of node A and it is a junction!
-        # "run" should only be called from the following combinations of nodes:
-        # junction to junction, workstation/base to junction, junction to workstation/base.
         print('Moving from %s to %s' % (self.nodeA.string, self.nodeB.string))
         
         # TODO: WRITE CODE FOR MOVEMENT HERE!
         
+        sleep(wait_time)
         return self.nodeB
 
 
@@ -61,26 +57,25 @@ class Move(SubInstruction):
 class MoveJunction(SubInstruction):
     def __str__(self):
         return 'MoveJunction(%s,%s)' % (self.entry, self.exit)
-    # If node B is a junction, the robot should stop before entering the juction
-    # Thus if the opposite is needed no exit input is needed to reach back node A.
 
     def __init__(self, entry, exit):
         self.entry = entry
         self.exit = exit
         
     def run(self):
-        # Exit parameter is the exit that the robot should take,
-        # if robot is at the start of node A and it is a junction!
+        # Entry and exit are strings representing the entry and exit
+        # that the robot should take at the junction: 'y' for yellow etc.
         print('Junction entry: %s, exit: %s' % (self.entry, self.exit))
 
         # TODO: WRITE CODE FOR MOVEMENT HERE!
+
         sleep(wait_time)
         print('Junction movement finished')
         return None
 
     def opposite(self):
         return MoveJunction(self.exit, self.entry)
-        
+
 class Reverse(SubInstruction):
     # Reverses the position of the robot 180 degrees
     def __str__(self):
