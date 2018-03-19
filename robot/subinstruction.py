@@ -3,7 +3,6 @@
 #---------FOR PRESENTATION--------------
 from time import sleep
 from vertical import *
-from client import junction_endpoints
 from ev3dev.ev3 import *
 import linefollower
 
@@ -36,14 +35,13 @@ class Move(SubInstruction):
     # Robot will be facing the right direction when starting this
     # instruction (Node A -> Node B)
     def __str__(self):
-        return 'Move(%s,%s,%s)' % (self.nodeA, self.nodeB, self.exit)
-        
+        return 'Move(%s,%s)' % (self.nodeA, self.nodeB)
+
     # If node B is a junction, the robot should stop before entering the juction
     # Thus if the opposite is needed no exit input is needed to reach back node A.
-    def __init__(self, nodeA, nodeB, exit=None):
+    def __init__(self, nodeA, nodeB):
         self.nodeA = nodeA
         self.nodeB = nodeB
-        self.exit = exit
 
     def run(self):
         # Exit parameter is the exit that the robot should take,
@@ -51,19 +49,38 @@ class Move(SubInstruction):
         # "run" should only be called from the following combinations of nodes:
         # junction to junction, workstation/base to junction, junction to workstation/base.
         print('Moving from %s to %s' % (self.nodeA.string, self.nodeB.string))
-        linefollower.run(self.exit)
+        
+        # TODO: WRITE CODE FOR MOVEMENT HERE!
+        
         return self.nodeB
 
 
     def opposite(self):
-        new_exit = None
-        if self.nodeB.isJunction:
-            # Find which exit to use
-            # r for red, g for green, b for blue, y for yellow
-            new_exit = [colour for colour, node in junction_endpoints[
-                self.nodeB.number].items() if node == self.nodeA.string][0]
-        return Move(self.nodeB, self.nodeA, new_exit)
+        return Move(self.nodeB, self.nodeA)
 
+class MoveJunction(SubInstruction):
+    def __str__(self):
+        return 'MoveJunction(%s,%s)' % (self.entry, self.exit)
+    # If node B is a junction, the robot should stop before entering the juction
+    # Thus if the opposite is needed no exit input is needed to reach back node A.
+
+    def __init__(self, entry, exit):
+        self.entry = entry
+        self.exit = exit
+        
+    def run(self):
+        # Exit parameter is the exit that the robot should take,
+        # if robot is at the start of node A and it is a junction!
+        print('Junction entry: %s, exit: %s' % (self.entry, self.exit))
+
+        # TODO: WRITE CODE FOR MOVEMENT HERE!
+        sleep(wait_time)
+        print('Junction movement finished')
+        return None
+
+    def opposite(self):
+        return MoveJunction(self.exit, self.entry)
+        
 class Reverse(SubInstruction):
     # Reverses the position of the robot 180 degrees
     def __str__(self):

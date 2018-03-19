@@ -66,12 +66,16 @@ def pathCalculator(source, destination):
     # Loop iterates until the position travelled is the destination
     while not pos.equals(destination):
         if pos.isJunction:
+            entry = [colour for colour, node in junction_endpoints[
+                pos.number].items() if node == prev_pos.string][0]
             exit = optimal_routes[pos.number][destination.number]
             new_pos = Position(junction_endpoints[pos.number].get(exit))
-            subQueue.append(Move(pos,new_pos,exit))
+            subQueue.append(MoveJunction(entry,exit))
+            subQueue.append(Move(pos,new_pos))
         else:
             new_pos = Position(endpoint_junction_connection[pos.number])
             subQueue.append(Move(pos,new_pos))
+        prev_pos = pos    
         pos = new_pos
     return subQueue
 
