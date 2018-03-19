@@ -322,6 +322,21 @@ def handler(ip):
     while True:
         try:
             status = {
+                            "status": "Retrieve Map"
+            }
+            yield from websocket.send(json.dumps(status))
+            print("> {}".format(status))
+            map_raw = yield from websocket.recv()
+            print("< {}".format(map_raw))
+            map_obj = json.loads(map_raw)
+            global bases
+            global optimal_routes
+            global junction_endpoints
+            bases = set(map_obj["bases"])
+            optimal_routes = map_obj["optimal_routes"]
+            junction_endpoints = map_obj["junction_endpoints"]
+
+            status = {
                 "status": "Requesting new instruction"
             }
             yield from websocket.send(json.dumps(status))

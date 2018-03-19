@@ -26,7 +26,7 @@ junction_endpoints = [
 
 //=================== MAP END =========================
 
-if (process.argv[2] !== "persist") {
+if (process.argv[2] == "clear") {
     // Persistent storage clear
     console.log("Clearing local storage...");
     storage.clearSync();
@@ -149,6 +149,14 @@ wss.on('connection', function connection(ws) {
         debugger;
         var message = JSON.parse(data);
         switch (message.status) {
+            case "Retrieve Map":
+                var map = new Object();
+                map.bases = bases;
+                map.optimal_routes = optimal_routes;
+                map.junction_endpoints = junction_endpoints;
+                ws.send(JSON.stringify(map));
+                console.log('send: %s', JSON.stringify(map));
+                break;
             case "Requesting new instruction":
                 setComplete(ws.processRequestId);
 
