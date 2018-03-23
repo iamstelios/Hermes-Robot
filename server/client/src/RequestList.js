@@ -19,7 +19,7 @@ class RequestList extends Component {
             return (<ul>
                 <li>
                     <Alert bsStyle="warning">
-                        <strong>Error:</strong> {requestsFetch.reason}
+                        <strong>Error:</strong> {requestsFetch.reason.toString()}
                     </Alert>;
                 </li>
             </ul>);

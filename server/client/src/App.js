@@ -75,11 +75,11 @@ class App extends Component {
 
     render() {
         return (<div className="App">
-                <Grid fluid="fluid">
+                <Grid fluid={true}>
                     <Row className="App-header">
                         <Col xs={12}>
                             <ButtonToolbar id="user-button-bar">
-                                <DropdownButton bsStyle="default" title={"User " + this.state.userId} key="0"
+                                <DropdownButton id="user-dropdown" bsStyle="default" title={"User " + this.state.userId} key="0"
                                                 onSelect={(eventKey, event) => this.setState({userId: eventKey})}>
                                     <MenuItem eventKey={1}>1</MenuItem>
                                     <MenuItem eventKey={2}>2</MenuItem>

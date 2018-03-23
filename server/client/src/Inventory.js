@@ -158,10 +158,10 @@ class Inventory extends Component {
             itemRows.push(row);
         }
 
-        itemRows.forEach(row => {
-            inv.push(<Row>
+        itemRows.forEach((row, index) => {
+            inv.push(<Row key={index}>
                 {row.map(item => {
-                    return (<Col sm={12} md={6} lg={4}>
+                    return (<Col key={item.code} sm={12} md={6} lg={4}>
                         <Panel bsStyle="primary">
                             <Panel.Heading>
                                 <Panel.Title componentClass="h3">Item code: {item.code}{!item.inStorage && <span> (on loan)</span>}</Panel.Title>
