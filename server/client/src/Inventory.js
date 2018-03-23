@@ -4,42 +4,18 @@ import {
     Button,
     Col,
     Grid,
-    Row
+    Row,
+    Alert
 } from 'react-bootstrap'
 import {withAlert} from 'react-alert'
 import './App.css'
 import apiUrl from "./APIURL";
+import {connect} from "react-refetch";
 
 class Inventory extends Component {
     constructor(props, context) {
         super(props);
-        this.state = {
-            inventory: [],
-            requestFailed: false
-        };
         this.handleSubmit = this.handleSubmit.bind(this);
-    }
-
-    componentDidMount() {
-        fetch(apiUrl + '/api/inventory')
-            .then(response => {
-                if (!response.ok) {
-                    throw Error("Network request failed")
-                }
-
-                return response
-            })
-            .then(r => r.json())
-            .then(r => {
-                this.setState({
-                    inventory: r
-                });
-
-            }, () => {
-                this.setState({
-                    requestFailed: true
-                });
-            });
     }
 
     handleSubmit(item, reqType, e) {
@@ -151,43 +127,65 @@ class Inventory extends Component {
             colCount = 3;
         }
 
-        for (let i = 0; i < this.state.inventory.length; i += colCount) {
-            let row = [];
-            for (let j = 0; j < colCount && (i + j < this.state.inventory.length); j++) {
-                row.push(this.state.inventory[i + j]);
+        const {invFetch} = this.props;
+
+        if (invFetch.pending) {
+            return (<p>...</p>);
+        } else if (invFetch.rejected) {
+            return (<Row>
+                <Alert bsStyle="warning">
+                    <strong>Error:</strong> {invFetch.reason.toString()}
+                </Alert>
+            </Row>);
+        } else if (invFetch.fulfilled) {
+            for (let i = 0; i < invFetch.value.length; i += colCount) {
+                let row = [];
+                for (let j = 0; j < colCount && (i + j < invFetch.value.length); j++) {
+                    row.push(invFetch.value[i + j]);
+                }
+                itemRows.push(row);
             }
-            itemRows.push(row);
+
+            itemRows.forEach((row, index) => {
+                inv.push(<Row key={index}>
+                    {row.map(item => {
+                        return (<Col key={item.code} sm={12} md={6} lg={4}>
+                            <Panel bsStyle="primary">
+                                <Panel.Heading>
+                                    <Panel.Title componentClass="h3">Item code: {item.code}{!item.inStorage &&
+                                    <span> (on loan)</span>}</Panel.Title>
+                                </Panel.Heading>
+                                <Panel.Body>
+                                    <h4>{item.name}</h4>
+                                    <Button onClick={(e) => this.handleSubmit(item, "retrieve", e)}
+                                            className="half-width"
+                                            bsStyle="primary">
+                                        Retrieve
+                                    </Button>
+                                    <Button onClick={(e) => this.handleSubmit(item, "store", e)} className="half-width"
+                                            bsStyle="primary">
+                                        Store
+                                    </Button>
+                                </Panel.Body>
+                            </Panel>
+                        </Col>)
+                    })}
+                </Row>)
+            });
+
+            return (<Grid fluid={true}>
+                {inv}
+            </Grid>);
         }
-
-        itemRows.forEach((row, index) => {
-            inv.push(<Row key={index}>
-                {row.map(item => {
-                    return (<Col key={item.code} sm={12} md={6} lg={4}>
-                        <Panel bsStyle="primary">
-                            <Panel.Heading>
-                                <Panel.Title componentClass="h3">Item code: {item.code}{!item.inStorage && <span> (on loan)</span>}</Panel.Title>
-                            </Panel.Heading>
-                            <Panel.Body>
-                                <h4>{item.name}</h4>
-                                <Button onClick={(e) => this.handleSubmit(item, "retrieve", e)} className="half-width"
-                                        bsStyle="primary">
-                                    Retrieve
-                                </Button>
-                                <Button onClick={(e) => this.handleSubmit(item, "store", e)} className="half-width"
-                                        bsStyle="primary">
-                                    Store
-                                </Button>
-                            </Panel.Body>
-                        </Panel>
-                    </Col>)
-                })}
-            </Row>)
-        });
-
-        return (<Grid fluid={true}>
-            {inv}
-        </Grid>);
     }
 }
 
-export default withAlert(Inventory);
+// export default withAlert(Inventory);
+
+export default withAlert(connect(props => ({
+    invFetch: {
+        url: apiUrl + '/api/inventory',
+        refreshInterval: 1000
+    }
+}))
+(Inventory));
