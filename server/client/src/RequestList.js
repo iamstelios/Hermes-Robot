@@ -20,7 +20,7 @@ class RequestList extends Component {
                 <li>
                     <Alert bsStyle="warning">
                         <strong>Error:</strong> {requestsFetch.reason.toString()}
-                    </Alert>;
+                    </Alert>
                 </li>
             </ul>);
         } else if (requestsFetch.fulfilled) {
