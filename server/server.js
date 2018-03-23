@@ -8,6 +8,8 @@ var userRouter = require('./user-router');
 
 var app = express();
 
+app.use(express.static(`${__dirname}/client/build`));
+
 var port = process.env.PORT || 8080;
 
 //================= HARDCODED MAP =====================

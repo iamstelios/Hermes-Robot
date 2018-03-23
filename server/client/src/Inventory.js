@@ -8,6 +8,7 @@ import {
 } from 'react-bootstrap'
 import {withAlert} from 'react-alert'
 import './App.css'
+import apiUrl from "./APIURL";
 
 class Inventory extends Component {
     constructor(props, context) {
@@ -20,7 +21,7 @@ class Inventory extends Component {
     }
 
     componentDidMount() {
-        fetch('/api/inventory')
+        fetch(apiUrl + '/api/inventory')
             .then(response => {
                 if (!response.ok) {
                     throw Error("Network request failed")
@@ -72,7 +73,7 @@ class Inventory extends Component {
     }
 
     submitStoreRequest(itemCode) {
-        fetch('/api/requests/', {
+        fetch(apiUrl + '/api/requests/', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
@@ -105,7 +106,7 @@ class Inventory extends Component {
     }
 
     submitRetrieveRequest(itemCode) {
-        fetch('/api/requests/', {
+        fetch(apiUrl + '/api/requests/', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
