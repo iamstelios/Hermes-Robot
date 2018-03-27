@@ -166,7 +166,7 @@ class VerticalMovementManager:
     def _move_to_switch(self, reed, pos):
         print("_move_to_switch(reed={},pos={})".format(reed, pos))
 
-        SPREAD = 5 # Minimum distance to the sensor to begin sensing
+        SPREAD = 7 # Minimum distance to the sensor to begin sensing
 
         # Distance and direction to the sensor
         diff = pos - self._pkl_pos

@@ -6,6 +6,7 @@ import {
     ButtonGroup
 } from 'react-bootstrap'
 import {connect} from "react-refetch";
+import apiUrl from "./APIURL";
 
 export class Request extends Component {
     constructor(props, context) {
@@ -18,7 +19,7 @@ export class Request extends Component {
 
     cancelRequest(requestId) {
         console.log("cancel request: ", requestId);
-        fetch('/api/requests/' + requestId, {
+        fetch(apiUrl + '/api/requests/' + requestId, {
             method: 'delete'
         })
             .then(response => response.json())
@@ -66,7 +67,7 @@ class ProcessingRequest extends Component {
 
     cancelRequest(requestId) {
         console.log("cancel request: ", requestId);
-        fetch('/api/requests/' + requestId, {
+        fetch(apiUrl + '/api/requests/' + requestId, {
             method: 'delete'
         })
             .then(response => response.json())
@@ -92,9 +93,13 @@ class ProcessingRequest extends Component {
             progress
         } = this.props.request;
 
+        console.log(this.props.request);
+
         let title = "...";
+        let emptyBox = false;
         if (requestFetch.fulfilled) {
             title = requestFetch.value.title;
+            emptyBox = requestFetch.value.emptyBox;
         }
 
         let percentageProgress = 0;
@@ -112,7 +117,7 @@ class ProcessingRequest extends Component {
         console.log(this.state);
         return (<Panel>
             <Panel.Heading>
-                <Panel.Title componentClass="h3">{title}&nbsp;(#{id})
+                <Panel.Title componentClass="h3">{!emptyBox && title}{emptyBox && <span>Retrieving empty box for your new item</span>}&nbsp;(#{id})
                 </Panel.Title>
             </Panel.Heading>
             <Panel.Body>
@@ -126,16 +131,16 @@ class ProcessingRequest extends Component {
                     position !== undefined &&
                     <p>{message}</p>
                 }
-                <ButtonGroup>
+                {!emptyBox && <ButtonGroup>
                     <Button onClick={() => this.cancelRequest(id)}>Cancel</Button>
-                </ButtonGroup>
+                </ButtonGroup>}
             </Panel.Body>
         </Panel>);
     }
 }
 
 export const RefetchProcessingRequest = connect(props => ({
-    requestFetch: `/api/requests/${props.request.id}`//,
+    requestFetch: apiUrl + `/api/requests/${props.request.id}`//,
     // requestFetch: {
     //     url: `/api/requests/${props.id}`,
     //     then: req => `/api/inventory/${req.itemCode}`

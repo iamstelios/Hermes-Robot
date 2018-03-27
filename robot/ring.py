@@ -15,8 +15,8 @@ class RingBuf:
     tp - the type of variable stored (e.g. 'f' for float)
     size - the size of the buffer
     """
-    def __init__(self, tp, size):
-        self._data = array.array(tp, [0]*size)
+    def __init__(self, init_val, size):
+        self._data = [init_val]*size
         self._size = size
         self._i = 0
 
@@ -46,8 +46,8 @@ class RingBuf:
     def avg(self, n):
         if n < 1:
             raise ValueError("Must use at least one value.")
-        avg = 0
-        for i in range(0, n):
+        avg = self.get(0)
+        for i in range(1, n):
             avg += self.get(i)
 
         return avg / n
