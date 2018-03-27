@@ -6,7 +6,8 @@
     "server": "node server.js",
     "server-persist": "node server.js persist",
     "dev": "concurrently --kill-others-on-fail \"yarn server\" \"yarn client\"",
-    "dev-persist": "concurrently --kill-others-on-fail \"yarn server-persist\" \"yarn client\""
+    "dev-persist": "concurrently --kill-others-on-fail \"yarn server-persist\" \"yarn client\"",
+    "prod": "concurrently --kill-others-on-fail \"yarn server\" \"serve -s client/build\""
   },
   "dependencies": {
     "body-parser": "^1.18.2",
