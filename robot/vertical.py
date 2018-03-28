@@ -2,7 +2,6 @@ from ev3dev.ev3 import MediumMotor, OUTPUT_A
 from enum import IntEnum, Enum
 from pickled import pickled
 from arduino import ArduinoSensorsManager
-import time
 
 
 """ Possible positions of the lift, in percentage units. """
@@ -16,6 +15,20 @@ class LiftPos(IntEnum):
     SHELF_1_UP = 61
     SHELF_2 = 87
     SHELF_2_UP = 100
+
+    """
+    If the position is a shelf with an _UP position available,
+    return the _UP position. Otherwise returns the same position.
+    """
+    def above(pos):
+        if pos == LiftPos.SHELF_0:
+            return LiftPos.SHELF_0_UP
+        elif pos == LiftPos.SHELF_1:
+            return LiftPos.SHELF_1_UP
+        elif pos == LiftPos.SHELF_2:
+            return LiftPos.SHELF_2_UP
+        else:
+            return pos
 
 """ Motor unit positions are in the range 0-TOP_MOTOR_POS. """
 TOP_MOTOR_POS = 13000 # The position delta of the motor from top to bottom
@@ -126,7 +139,6 @@ class VerticalMovementManager:
         ret = None
 
         while self._motor.is_running and cond():
-            print(cond())
             if self._motor.is_stalled:
                 ret = self._MoveWhileResult.STALLED
                 break
@@ -216,17 +228,15 @@ class VerticalMovementManager:
             peak2 = [0, 0]
 
             # We're on a peak, find its limits by going up and down
-            print("Scanning peak 1")
-            time.sleep(1.5)
+            #print("Scanning peak 1")
             self._move_while(see_mag, mult)
             peak1[(sign + 1) // 2] = self._motor.position
 
-            print("Scanning peak 1 in 2nd direction")
-            time.sleep(1.5)
+            #print("Scanning peak 1 in 2nd direction")
             # Move a tiny bit down to be within peak again
             mvd = self._move_while(lambda: not see_mag(), -mult, 500) 
             if mvd != self._MoveWhileResult.COND:
-                raise ValueError("ERROR: peak 1 not wi")
+                raise ValueError("ERROR: peak 1 not within reach")
 
             self._move_while(see_mag, -mult)
             peak1[(-sign + 1) // 2] = self._motor.position
@@ -234,15 +244,14 @@ class VerticalMovementManager:
             print(peak1)
             return
 
-            print("Looking for peak 2")
-            time.sleep(1.5)
+            #print("Looking for peak 2")
             mvd = self._move_while(lambda: not see_mag(), -4, 250)
             if mvd == self._MoveWhileResult.OVER_LIM or mvd == self._MoveWhileResult.OVER_RANGE:
-                print("Moved far down from peak 1, so peak 2 is above. Moving to center")
+                #print("Moved far down from peak 1, so peak 2 is above. Moving to center")
                 self._move_to_raw(self._pkl_pos + motor_to_percent(peak1[1] - self._motor.position))
                 self._move_to_raw(self._pkl_pos + 1)
             else:
-                print("Moved just a bit from peak 1, so peak 2 is below. Moving to center")
+                #print("Moved just a bit from peak 1, so peak 2 is below. Moving to center")
                 top = self._motor.position
                 self._move_to_raw(self._pkl_pos + motor_to_percent(peak1[0] - top)/2)
 

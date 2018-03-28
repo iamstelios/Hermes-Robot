@@ -10,6 +10,7 @@ from collections import deque
 from subinstruction import *
 import argparse
 
+
 # ================= HARDCODED MAP =====================
 
 # r for red, g for green, b for blue, y for yellow
@@ -103,6 +104,7 @@ def go(dst):
     if destination.isJunction :
         raise Exception("Go destination cannot be a junction")
     subQueue = pathCalculator(last_pos, destination)
+    subQueue.append(Reverse())
 
     cancelled = yield from queueProcessor(subQueue)
     return cancelled
@@ -136,7 +138,7 @@ def retrieve(level, src, dst):
     # Add path to workstation
     subQueue.extend(pathCalculator(source, destination))
 
-    subQueue.append(WorkstationDrop())
+    subQueue.append(BaseDrop(1))
     subQueue.append(Reverse())
 
     cancelled = yield from queueProcessor(subQueue, uncancellableQueue)
@@ -163,7 +165,7 @@ def store(level, src, dst):
         # Face the workstation
         subQueue.append(Reverse())
 
-    subQueue.append(WorkstationPickUp())
+    subQueue.append(BasePickUp(1))
     subQueue.append(Reverse())
     # Add path to base
     subQueue.extend(pathCalculator(source, destination))
@@ -195,12 +197,12 @@ def transfer(src, dst):
         # Face the workstation
         subQueue.append(Reverse())
 
-    subQueue.append(WorkstationPickUp())
+    subQueue.append(BasePickUp(1))
     subQueue.append(Reverse())
     # Add path to destination workstation
     subQueue.extend(pathCalculator(source, destination))
 
-    subQueue.append(WorkstationDrop())
+    subQueue.append(BaseDrop(1))
     subQueue.append(Reverse())
 
     cancelled = yield from queueProcessor(subQueue, uncancellableQueue)
