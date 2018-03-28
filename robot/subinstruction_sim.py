@@ -82,7 +82,7 @@ def _lvl_to_shelf(lvl):
 class BasePickUp(SubInstruction):
     # Picks up item at shelf level
     def __str__(self):
-        return 'BasePickUp(%s)' % (self.level, websocket)
+        return 'BasePickUp(%s)' % (self.level)
 
     def __init__(self, level):
         self.level = level
