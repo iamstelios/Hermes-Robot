@@ -6,7 +6,7 @@ import json
 import sys
 import re
 from collections import deque
-from subinstruction import *
+from subinstruction_sim import *
 import argparse
 
 websocket = None
