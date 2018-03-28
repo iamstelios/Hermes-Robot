@@ -2,11 +2,6 @@
 
 import websockets
 
-
-wait_time = 0
-v = VerticalMovementManager()
-g = GroundMovementController()
-
 class SubInstruction(object):
     """ Abstract class """
     def run(self):
