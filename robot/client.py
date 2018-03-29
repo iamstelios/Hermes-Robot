@@ -95,7 +95,7 @@ class alreadyInPlaceException(Exception):
         self.message = message 
 
 def go(dst):
-    # Robot moves to the destination (faces away from junction and into the node!!)
+    # Robot moves to the destination
     print("Instruction: go(%s)" % dst)
     destination = Position(dst)
     if destination.equals(last_pos):
@@ -103,7 +103,7 @@ def go(dst):
     if destination.isJunction :
         raise Exception("Go destination cannot be a junction")
     subQueue = pathCalculator(last_pos, destination)
-
+    subQueue.append(Reverse())
     cancelled = yield from queueProcessor(subQueue)
     return cancelled
 
