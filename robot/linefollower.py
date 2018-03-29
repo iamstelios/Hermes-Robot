@@ -157,9 +157,9 @@ class MoveState(Enum):
 
 #@pickled
 class GroundMovementController:
-    LINE_PID = PidRunner(0.55, 0.02, 0.05, 60)
+    LINE_PID = PidRunner(0.55, 0.02, 0.05, 70)
     ROUNDABOUT_PID = PidRunner(0.6, 0.05, 0.3, 75)
-    DOCK_PID = PidRunner(0.65, 0.3, 0, 50)
+    DOCK_PID = PidRunner(0.65, 0.3, 0, 25)
 
     def __init__(self):
         self._pkl_state = MoveState.AT_LINE
@@ -270,6 +270,6 @@ class GroundMovementController:
             pass
 
     def dock(self):
-        self.follow_line_until('r')
+        self.follow_line_until('r', pid_runner=self.DOCK_PID)
 
 g = GroundMovementController()
