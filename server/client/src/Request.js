@@ -6,6 +6,7 @@ import {
     ButtonGroup
 } from 'react-bootstrap'
 import {connect} from "react-refetch";
+import apiUrl from "./APIURL";
 
 export class Request extends Component {
     constructor(props, context) {
@@ -18,7 +19,7 @@ export class Request extends Component {
 
     cancelRequest(requestId) {
         console.log("cancel request: ", requestId);
-        fetch('/api/requests/' + requestId, {
+        fetch(apiUrl + '/api/requests/' + requestId, {
             method: 'delete'
         })
             .then(response => response.json())
@@ -66,7 +67,7 @@ class ProcessingRequest extends Component {
 
     cancelRequest(requestId) {
         console.log("cancel request: ", requestId);
-        fetch('/api/requests/' + requestId, {
+        fetch(apiUrl + '/api/requests/' + requestId, {
             method: 'delete'
         })
             .then(response => response.json())
@@ -139,7 +140,7 @@ class ProcessingRequest extends Component {
 }
 
 export const RefetchProcessingRequest = connect(props => ({
-    requestFetch: `/api/requests/${props.request.id}`//,
+    requestFetch: apiUrl + `/api/requests/${props.request.id}`//,
     // requestFetch: {
     //     url: `/api/requests/${props.id}`,
     //     then: req => `/api/inventory/${req.itemCode}`

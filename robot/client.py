@@ -16,13 +16,13 @@ import argparse
 
 bases = set([0])
 
-optimal_routes = [['r', 'y', 'g', 'g'], ['r', 'r', 'g', 'y']]
+optimal_routes = [['r', 'y', 'b', 'b'], ['r', 'r', 'b', 'y']]
 
 endpoint_junction_connection = ['J0', 'J0', 'J1', 'J1']
 
 junction_endpoints = [
-    {"r": "0", "g": "J1", "y": "1"},
-    {"y": "3", "g": "2", "r": "J0"},
+    {"r": "0", "b": "J1", "y": "1"},
+    {"y": "3", "b": "2", "r": "J0"},
 ]
 
 
@@ -313,7 +313,7 @@ def action_caller(instruction):
 @asyncio.coroutine
 def handler(ip):
     print("STARTING")
-    print("POSITION: %d" % last_pos.string)
+    print("POSITION: %s" % last_pos.string)
     try:
         websocket = yield from websockets.connect("ws://%s:8000/" % ip)
     except OSError:

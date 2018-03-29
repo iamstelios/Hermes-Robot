@@ -45,9 +45,9 @@ class Move(SubInstruction):
     def run(self):
         print('Moving from %s to %s' % (self.nodeA.string, self.nodeB.string))
         
-        # TODO: WRITE CODE FOR MOVEMENT HERE!
+        linefollower.follow_line_until('bk')
         
-        sleep(wait_time)
+        # sleep(wait_time)
         return self.nodeB
 
 
@@ -67,9 +67,12 @@ class MoveJunction(SubInstruction):
         # that the robot should take at the junction: 'y' for yellow etc.
         print('Junction entry: %s, exit: %s' % (self.entry, self.exit))
 
-        # TODO: WRITE CODE FOR MOVEMENT HERE!
-
-        sleep(wait_time)
+        linefollower.follow_line_until(self.entry, "RIGHT")
+        linefollower.swap_to("LEFT")
+        linefollower.follow_line_until(self.exit, "LEFT")
+        linefollower.swap_to("RIGHT")
+        linefollower.follow_line_until('bk')
+        # sleep(wait_time)
         print('Junction movement finished')
         return None
 
