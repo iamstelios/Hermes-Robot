@@ -31,7 +31,8 @@ junction_endpoints = [
 class Position:
     def __str__(self):
         return self.string
-    def __init__(self,string):
+
+    def __init__(self, string):
         self.string = string
         junction_pattern = re.compile("^J\d+$")
         endpoint_pattern = re.compile("^\d+$")
@@ -75,24 +76,25 @@ def pathCalculator(source, destination):
                 pos.number].items() if node == prev_pos.string][0]
             exit = optimal_routes[pos.number][destination.number]
             new_pos = Position(junction_endpoints[pos.number].get(exit))
-            subQueue.append(MoveJunction(entry,exit))
-            subQueue.append(Move(pos,new_pos))
+            subQueue.append(MoveJunction(entry, exit))
+            subQueue.append(Move(pos, new_pos))
         else:
             new_pos = Position(endpoint_junction_connection[pos.number])
-            subQueue.append(Move(pos,new_pos))
-        prev_pos = pos    
+            subQueue.append(Move(pos, new_pos))
+        prev_pos = pos
         pos = new_pos
     return subQueue
 
 
 # -------------------------INSTRUCTIONS----------------------------
 
-# All instructions executed with robot without holding a box 
+# All instructions executed with robot without holding a box
 # and facing junction (all workstation connected to a junction!)
 
 class alreadyInPlaceException(Exception):
     def __init__(self, message):
-        self.message = message 
+        self.message = message
+
 
 def go(dst):
     # Robot moves to the destination
@@ -100,11 +102,15 @@ def go(dst):
     destination = Position(dst)
     if destination.equals(last_pos):
         raise alreadyInPlaceException("Robot already in place requested to go")
-    if destination.isJunction :
+    if destination.isJunction:
         raise Exception("Go destination cannot be a junction")
     subQueue = pathCalculator(last_pos, destination)
     subQueue.append(Reverse())
-    cancelled = yield from queueProcessor(subQueue)
+
+    try:
+        cancelled = yield from queueProcessor(subQueue)
+    except SubinstructionError as e:
+        raise e
     return cancelled
 
 
@@ -121,7 +127,7 @@ def retrieve(level, src, dst):
     # Queue of all the sub instruction instances to be executed
     subQueue = deque()
     # Used for the instructions move the robot to the source
-    # Because this way it doesn't need to go back to original 
+    # Because this way it doesn't need to go back to original
     # place without moving something
     uncancellableQueue = deque()
     if not last_pos.equals(source):
@@ -139,7 +145,10 @@ def retrieve(level, src, dst):
     subQueue.append(WorkstationDrop())
     subQueue.append(Reverse())
 
-    cancelled = yield from queueProcessor(subQueue, uncancellableQueue)
+    try:
+        cancelled = yield from queueProcessor(subQueue, uncancellableQueue)
+    except SubinstructionError as e:
+        raise e
     return cancelled
 
 
@@ -171,7 +180,10 @@ def store(level, src, dst):
     subQueue.append(BaseDrop(level))
     subQueue.append(Reverse())
 
-    cancelled = yield from queueProcessor(subQueue, uncancellableQueue)
+    try:
+        cancelled = yield from queueProcessor(subQueue, uncancellableQueue)
+    except SubinstructionError as e:
+        raise e
     return cancelled
 
 
@@ -203,7 +215,10 @@ def transfer(src, dst):
     subQueue.append(WorkstationDrop())
     subQueue.append(Reverse())
 
-    cancelled = yield from queueProcessor(subQueue, uncancellableQueue)
+    try:
+        cancelled = yield from queueProcessor(subQueue, uncancellableQueue)
+    except SubinstructionError as e:
+        raise e
     return cancelled
 
 
@@ -225,14 +240,14 @@ def queueProcessor(queue, uncancellableQueue=deque()):
         # Run instruction dequeued
         try:
             position_change = subInstruction.run()
-            if position_change is not None:
-                last_pos = position_change
-        except Exception as e:
-            print("Error: SubInstruction failed to execute " + str(e))
+        except SubinstructionError as e:
+            raise e
+        if position_change is not None:
+            last_pos = position_change
         # poll server for cancellation and update position
-        cancelled = (yield last_pos.string, totalInstructions, 
-            totalInstructions-len(queue)-len(uncancellableQueue))
-    
+        cancelled = (yield last_pos.string, totalInstructions,
+                     totalInstructions-len(queue)-len(uncancellableQueue))
+
     # Loop until instruction queue is empty
     while queue and not cancelled:
         # Dequeue sub instruction
@@ -243,13 +258,14 @@ def queueProcessor(queue, uncancellableQueue=deque()):
         # Run instruction dequeued
         try:
             position_change = subInstruction.run()
-            if position_change is not None:
-                last_pos = position_change
-        except Exception as e:
-            print("Error: SubInstruction failed to execute " + str(e))
+        except SubinstructionError as e:
+            raise e
+
+        if position_change is not None:
+            last_pos = position_change
         # poll server for cancellation
-        cancelled = (yield last_pos.string, totalInstructions, 
-            totalInstructions-len(queue)-len(uncancellableQueue))
+        cancelled = (yield last_pos.string, totalInstructions,
+                     totalInstructions-len(queue)-len(uncancellableQueue))
 
     # if cancelled then run reverse stack and confirm to server
     firstMovement = True
@@ -260,7 +276,10 @@ def queueProcessor(queue, uncancellableQueue=deque()):
         print('Subinstruction: %s' % subInstruction)
         if class_name(subInstruction) == "Move" and firstMovement:
             # Reverse the robot to face the new path
-            Reverse().run()
+            try:
+                Reverse().run()
+            except SubinstructionError as e:
+                raise e
             firstMovement = False
         # reverse function don't need to be executed except at the end
         if class_name(subInstruction) == "Reverse":
@@ -270,16 +289,19 @@ def queueProcessor(queue, uncancellableQueue=deque()):
             continue
         try:
             position_change = subInstruction.run()
-            if position_change:
-                last_pos = position_change
-        except Exception as e:
-            print("Error: SubInstruction failed to execute " + str(e))
+        except SubinstructionError as e:
+            raise e
+        if position_change:
+            last_pos = position_change
         # Send position to the server
         yield last_pos.string, totalInstructions, totalInstructions - len(reverseStack)
 
     if cancelled:
         # Reverse such that the robot faces the junction
-        Reverse().run()
+        try:
+            Reverse().run()
+        except SubinstructionError as e:
+            raise e
     return cancelled
 
 
@@ -287,34 +309,56 @@ def action_caller(instruction):
     action = instruction["action"]
     if action == "go":
         dst = instruction["dst"]
-        yield from go(dst)
+        try:
+            yield from go(dst)
+        except SubinstructionError as e:
+            raise e
     elif action == "store":
         # Destination should be the base the box is to be stored
         level = instruction["level"]
         dst = instruction["dst"]
         src = instruction["src"]
-        yield from store(level, src, dst)
+        try:
+            yield from store(level, src, dst)
+        except SubinstructionError as e:
+            raise e
     elif action == "retrieve":
         # Source should be the base the box to be retrieved is located
         level = instruction["level"]
         src = instruction["src"]
         dst = instruction["dst"]
-        yield from retrieve(level, src, dst)
+       try:
+            yield from retrieve(level, src, dst)
+        except SubinstructionError as e:
+            raise e
     elif action == "transfer":
         # Transfer is between two workstations
         src = instruction["src"]
         dst = instruction["dst"]
-        yield from transfer(src, dst)
-    elif action == 'update_map':
-        pass
-        # TODO: update_map()
+        try:
+            yield from transfer(src, dst)
+        except SubinstructionError as e:
+            raise e
 
+@asyncio.coroutine
+def subinstructionErrorHandler(message, websocket):
+    print('ERROR RECEIVED')
+    status = {
+        "status": "Error",
+        "message": message
+    }
+    yield from websocket.send(json.dumps(status))
+    # Sound.speak(message)
+    print(message)
+    print('EXITING')
+    sys.exit(0)
 
 @asyncio.coroutine
 def handler(ip):
     print("STARTING")
     print("POSITION: %s" % last_pos.string)
     try:
+        print("CONNECTING: %s:8000/" % ip)
         websocket = yield from websockets.connect("ws://%s:8000/" % ip)
     except OSError:
         print("Cannot connect to the server")
@@ -322,7 +366,7 @@ def handler(ip):
     while True:
         try:
             status = {
-                            "status": "Retrieve Map"
+                "status": "Retrieve Map"
             }
             yield from websocket.send(json.dumps(status))
             print("> {}".format(status))
@@ -331,9 +375,11 @@ def handler(ip):
             map_obj = json.loads(map_raw)
             global bases
             global optimal_routes
+            global endpoint_junction_connection
             global junction_endpoints
             bases = set(map_obj["bases"])
             optimal_routes = map_obj["optimal_routes"]
+            endpoint_junction_connection = map_obj["endpoint_junction_connection"]
             junction_endpoints = map_obj["junction_endpoints"]
 
             status = {
@@ -352,13 +398,17 @@ def handler(ip):
                 instruction = json.loads(instruction_raw)
                 cancelled = False
 
-                #Generator that yields current position and is sending the cancellation
-                gen= action_caller(instruction)
+                # Generator that yields current position and is sending the cancellation
+                gen = action_caller(instruction)
                 try:
-                    #for new_position in gen:
-                    new_position, totalInstructions, currentInstruction = next(gen)
+                    # for new_position in gen:
+                    new_position, totalInstructions, currentInstruction = next(
+                        gen)
                 except alreadyInPlaceException:
                     continue
+                 except SubinstructionError as e:
+                    message = e.__str__()
+                    yield from subinstructionErrorHandler(message, websocket)
 
                 while True:
                     try:
@@ -382,10 +432,17 @@ def handler(ip):
 
                             cancel_instruction_raw = yield from websocket.recv()
                             print("< {}".format(cancel_instruction_raw))
-                            cancel_instruction = json.loads(cancel_instruction_raw)
+                            cancel_instruction = json.loads(
+                                cancel_instruction_raw)
                             cancelled = cancel_instruction["cancelled"]
                         # Continue the operation
-                        new_position, totalInstructions, currentInstruction = gen.send(cancelled)
+                        try:
+                            new_position, totalInstructions, currentInstruction = gen.send(
+                                cancelled)
+                        except SubinstructionError as e:
+                            message = e.__str__()
+                            yield from subinstructionErrorHandler(message, websocket)
+
                     except StopIteration:
                         if not cancelled:
                             break
@@ -400,29 +457,35 @@ def handler(ip):
                                 print("> {}".format(status))
 
                                 # Continue the operation
-                                new_position, totalInstructions, currentInstruction = gen.send(cancelled)
+                                try:
+                                    new_position, totalInstructions, currentInstruction = gen.send(
+                                        cancelled)
+                                except SubinstructionError as e:
+                                    message = e.__str__()
+                                    yield from subinstructionErrorHandler(message, websocket)
                             except StopIteration:
                                 break
 
-        # No need to send confirmation of instruction completed or cancelled           
+        # No need to send confirmation of instruction completed or cancelled
         except websockets.exceptions.ConnectionClosed:
-            for x in range(3):
-                Sound.speak("Lost connection to server")
+            print("Lost connection to server")
+            Sound.speak("Lost connection to server")
             break
 
     yield from websocket.close()
 
+
 def main():
     # Parse arguements
     parser = argparse.ArgumentParser(description='Robot Parameters')
-    parser.add_argument('--ip', type=str, default = "127.0.0.1",
-                   help='ip address of the server')
+    parser.add_argument('--ip', type=str, default="127.0.0.1",
+                        help='ip address of the server')
     parser.add_argument('--start', type=str, default="0",
-                   help='starting position of robot')
+                        help='starting position of robot')
 
     args = parser.parse_args()
     ip = args.ip
-    # Check if ip is correctly structured 
+    # Check if ip is correctly structured
     pattern = re.compile("\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}")
     test = pattern.match(ip)
     if (not test):
@@ -437,6 +500,7 @@ def main():
     last_pos = Position(args.start)
 
     asyncio.get_event_loop().run_until_complete(handler(ip))
-    
+
+
 if __name__ == "__main__":
     main()
