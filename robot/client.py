@@ -274,19 +274,27 @@ def queueProcessor(queue, uncancellableQueue=deque()):
         # Pop sub instruction
         subInstruction = reverseStack.pop()
         print('Subinstruction: %s' % subInstruction)
-        if class_name(subInstruction) == "Move" and firstMovement:
+        movement_subinstructions = ["Move", "MoveJunction"]
+        if class_name(subInstruction) in movement_subinstructions and firstMovement:
             # Reverse the robot to face the new path
             try:
                 Reverse().run()
             except SubinstructionError as e:
                 raise e
             firstMovement = False
-        # reverse function don't need to be executed except at the end
+        # reverse function doesn't need to be executed except at the end and beginning
         if class_name(subInstruction) == "Reverse":
-            # skip reversing
-            # yield for the sake of updating progress
-            yield last_pos.string, totalInstructions, totalInstructions - len(reverseStack)
-            continue
+            # Check if reverse was first in reverseStack
+            if len(reverseStack) == totalInstructions -1:
+                try:
+                    Reverse().run()
+                except SubinstructionError as e:
+                    raise e
+            else:
+                # skip reversing
+                # yield for the sake of updating progress
+                yield last_pos.string, totalInstructions, totalInstructions - len(reverseStack)
+                continue
         try:
             position_change = subInstruction.run()
         except SubinstructionError as e:
@@ -296,7 +304,7 @@ def queueProcessor(queue, uncancellableQueue=deque()):
         # Send position to the server
         yield last_pos.string, totalInstructions, totalInstructions - len(reverseStack)
 
-    if cancelled:
+    if cancelled and totalInstructions > 1:
         # Reverse such that the robot faces the junction
         try:
             Reverse().run()
