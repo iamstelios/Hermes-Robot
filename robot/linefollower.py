@@ -191,6 +191,8 @@ class GroundMovementController:
              or None if no lines were found
     """
     def _rotate_find_lines(self, dist, sensor):
+        print("_rotate_find_lines", dist)
+
         sensor.mode = 'COL-REFLECT'
 
         buf = RingBuf(0, 5)
@@ -200,8 +202,8 @@ class GroundMovementController:
 
         init_pos = mRight.position
 
-        mLeft.run_to_rel_pos(position_sp = -dist, stop_action="coast")
-        mRight.run_to_rel_pos(position_sp = dist, stop_action="coast")
+        mLeft.run_to_rel_pos(speed_sp = 150, position_sp = -dist, stop_action="coast")
+        mRight.run_to_rel_pos(speed_sp = 150, position_sp = dist, stop_action="coast")
 
         furthest_line = 0
         while mRight.is_running or mLeft.is_running:
@@ -252,10 +254,10 @@ class GroundMovementController:
 
         if self._pkl_dir == MoveDir.LINE_RIGHT:
             sensor = cRight
-            dist = 800
+            dist = 700
         else:
             sensor = cLeft
-            dist = -800
+            dist = -700
 
         self._rotate_find_lines(dist, sensor)
 
