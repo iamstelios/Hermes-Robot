@@ -25,8 +25,6 @@ MIN_REFL = 1
 MAX_REFL = 60
 """ Target value of reflectance for staying on line. """
 TARGET_REFL = 50
-""" Threshold reflectance above which we are definitely seeing white. """
-THRESH_REFL = 30
 
 """
 Stores parameters and provides functionality for following a line using PID.
@@ -191,14 +189,16 @@ class GroundMovementController:
              or None if no lines were found
     """
     def _rotate_find_lines(self, dist, sensor):
-        print("_rotate_find_lines", dist)
+        print("_rotate_find_lines(dist={})".format(dist))
 
         sensor.mode = 'COL-REFLECT'
 
         buf = RingBuf(0, 5)
 
+        # Threshold reflectance below which we are definitely seeing black
+        THRESH_REFL = 7
         # Threshold of variance above which we are on a black-white edge
-        VAR_THRESH = 30.0
+        VAR_THRESH = 20.0
 
         init_pos = mRight.position
 
@@ -210,7 +210,7 @@ class GroundMovementController:
             val = sensor.value()
             buf.push(val)
             var = buf.var(5)
-            if var > VAR_THRESH and val > THRESH_REFL:
+            if var > VAR_THRESH and val <= THRESH_REFL:
                 furthest_line = mRight.position
 
         diff = furthest_line - mRight.position
@@ -254,10 +254,10 @@ class GroundMovementController:
 
         if self._pkl_dir == MoveDir.LINE_RIGHT:
             sensor = cRight
-            dist = 700
+            dist = 800
         else:
             sensor = cLeft
-            dist = -700
+            dist = -800
 
         self._rotate_find_lines(dist, sensor)
 
