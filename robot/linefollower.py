@@ -1,8 +1,9 @@
 import time
-from ev3dev.ev3 import LargeMotor, ColorSensor
+from ev3dev.ev3 import LargeMotor, ColorSensor, UltrasonicSensor
 from enum import Enum, IntEnum
 from pickled import pickled
 from ring import RingBuf
+from subinstruction import SubinstructionError
 
 
 mLeft = LargeMotor('outD')
@@ -13,9 +14,12 @@ mLeft.polarity = 'inversed'
 
 cLeft = ColorSensor('in3')
 cRight = ColorSensor('in4')
+u = UltrasonicSensor('in2')
+
+udist_cm = 10
+timelimit = 10
 
 """ Marks which side of the robot the line is on. """
-# TODO did i get sides right?
 class MoveDir(IntEnum):
     LINE_LEFT = -1
     LINE_RIGHT = 1
@@ -30,7 +34,7 @@ TARGET_REFL = 50
 Stores parameters and provides functionality for following a line using PID.
 """
 class PidRunner:
-    """ Non-agressive steering. """
+    """ Aggressive steering. """
     def _steering1(self, course):
         power_left = power_right = self.power
         s = (50 - abs(float(course))) / 50
@@ -44,7 +48,7 @@ class PidRunner:
                 power_left = -self.power
         return (int(power_left), int(power_right))
 
-    """ Aggressive steering. """
+    """ Non-Aggressive steering. """
     def _steering2(self, course):
         if course >= 0:
             if course > 100:
@@ -110,6 +114,19 @@ class PidRunner:
 
             while colour not in stopcolours:
                 refRead = linesens.value()
+
+                # collision detection
+            if u.distance_centimeters <= udist_cm:
+                mLeft.stop()
+                mRight.stop()
+                timestart = time
+                while u.distance_centimeters <= udist_cm:
+                    timeelapsed = time - timestart
+                    if timeelapsed > timelimit:
+                        # raise exception
+                        raise SubinstructionError('Obstacle Encountered. Recover Unit')
+                    mLeft.run_direct()
+                    mRight.run_direct()
 
                 error = TARGET_REFL - (100 * (refRead - MIN_REFL) / (MAX_REFL - MIN_REFL))
                 derivative = error - lastError
