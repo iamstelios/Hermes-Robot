@@ -18,6 +18,8 @@ import {withAlert} from 'react-alert'
 import './App.css'
 import RequestPane from './RequestPane'
 import Inventory from './Inventory'
+import Simulation from './Simulation'
+
 
 class App extends Component {
     constructor(props, context) {
@@ -58,8 +60,8 @@ class App extends Component {
             })
             .then(r => r.json())
             .then(r => {
-                console.log(r);
-                if(r.errors !== undefined) {
+                //console.log(r);
+                if (r.errors !== undefined) {
                     this.props.alert.show(`Error: ${r.errors[0]}`, {
                         timeout: 2000,
                         type: 'error'
@@ -79,7 +81,8 @@ class App extends Component {
                     <Row className="App-header">
                         <Col xs={12}>
                             <ButtonToolbar id="user-button-bar">
-                                <DropdownButton id="user-dropdown" bsStyle="default" title={"User " + this.state.userId} key="0"
+                                <DropdownButton id="user-dropdown" bsStyle="default" title={"User " + this.state.userId}
+                                                key="0"
                                                 onSelect={(eventKey, event) => this.setState({userId: eventKey})}>
                                     <MenuItem eventKey={1}>1</MenuItem>
                                     <MenuItem eventKey={2}>2</MenuItem>
@@ -122,6 +125,9 @@ class App extends Component {
                                 </Tab>
                                 <Tab eventKey={3} title="Map">
                                     <canvas id="map" width="1000" height="600"></canvas>
+                                </Tab>
+                                <Tab eventKey={4} title="MapV2">
+                                    <Simulation/>
                                 </Tab>
                             </Tabs>
                         </Col>

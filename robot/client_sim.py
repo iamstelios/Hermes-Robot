@@ -322,6 +322,8 @@ def action_caller(instruction):
 def handler(ip):
     print("STARTING")
     print("POSITION: %s" % last_pos.string)
+    global websocket
+    yield from initialise_simulation(last_pos)
     try:
         websocket = yield from websockets.connect("ws://%s:8000/" % ip)
     except OSError:
