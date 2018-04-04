@@ -14,9 +14,9 @@ mLeft.polarity = 'inversed'
 
 cLeft = ColorSensor('in3')
 cRight = ColorSensor('in4')
-u = UltrasonicSensor('in2')
+u = UltrasonicSensor('in1')
 
-udist_cm = 10
+udist_cm = 5
 timelimit = 10
 
 """ Marks which side of the robot the line is on. """
@@ -80,7 +80,8 @@ class PidRunner:
     linesens - line sensor object
     stopcolours - array of colours to stop at
     """
-    def follow_line(self, direction, coloursens, linesens, stopcolours):
+
+    def follow_line(self, direction, coloursens, linesens, stopcolours, collision):
         print("PidRunner.follow_line(direction={},stopcolours={})".format(direction, stopcolours))
 
         # Coerce into list to avoid annoying errors
@@ -116,7 +117,7 @@ class PidRunner:
                 refRead = linesens.value()
 
                 # collision detection
-            if u.distance_centimeters <= udist_cm:
+            if u.distance_centimeters <= udist_cm & collision:
                 mLeft.stop()
                 mRight.stop()
                 timestart = time
@@ -186,7 +187,8 @@ class GroundMovementController:
         self._pkl_dir = dir
 
     """ Follows a straight line until the given colour is seen. """
-    def follow_line_until(self, colour, pid_runner=LINE_PID):
+
+    def follow_line_until(self, colour, pid_runner=LINE_PID, collision=True):
         if self._pkl_dir == MoveDir.LINE_RIGHT:
             coloursens = cLeft
             linesens = cRight
@@ -289,6 +291,6 @@ class GroundMovementController:
             pass
 
     def dock(self):
-        self.follow_line_until('r', pid_runner=self.DOCK_PID)
+        self.follow_line_until('r', pid_runner=self.DOCK_PID, collision=False)
 
 g = GroundMovementController()
