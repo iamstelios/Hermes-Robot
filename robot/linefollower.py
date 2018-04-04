@@ -1,9 +1,9 @@
 import time
-from ev3dev.ev3 import LargeMotor, ColorSensor, UltrasonicSensor
+from ev3dev.ev3 import LargeMotor, ColorSensor, UltrasonicSensor, Sound
 from enum import Enum, IntEnum
 from pickled import pickled
 from ring import RingBuf
-from subinstruction import SubinstructionError
+from util import SubinstructionError
 
 
 mLeft = LargeMotor('outD')
@@ -16,7 +16,7 @@ cLeft = ColorSensor('in3')
 cRight = ColorSensor('in4')
 u = UltrasonicSensor('in1')
 
-udist_cm = 5
+udist_cm = 10
 timelimit = 10
 
 """ Marks which side of the robot the line is on. """
@@ -117,15 +117,18 @@ class PidRunner:
                 refRead = linesens.value()
 
                 # collision detection
-            if u.distance_centimeters <= udist_cm & collision:
-                mLeft.stop()
-                mRight.stop()
-                timestart = time
-                while u.distance_centimeters <= udist_cm:
-                    timeelapsed = time - timestart
-                    if timeelapsed > timelimit:
-                        # raise exception
-                        raise SubinstructionError('Obstacle Encountered. Recover Unit')
+                dist = u.distance_centimeters
+                if dist <= udist_cm and collision:
+                    mLeft.stop()
+                    mRight.stop()
+                    timestart = time.time()
+                    while u.distance_centimeters <= udist_cm:
+                        timeelapsed = time.time() - timestart
+                        if timeelapsed > timelimit:
+                            # raise exception
+                            raise SubinstructionError('Obstacle Encountered. Recover Unit')
+                        Sound.tone(200, 100).wait()
+
                     mLeft.run_direct()
                     mRight.run_direct()
 
@@ -196,7 +199,7 @@ class GroundMovementController:
             coloursens = cRight
             linesens = cLeft
 
-        pid_runner.follow_line(self._pkl_dir, coloursens, linesens, [colour])
+        pid_runner.follow_line(self._pkl_dir, coloursens, linesens, [colour], collision)
 
     """
     Rotates around by at most dist tacho units while looking for lines.
