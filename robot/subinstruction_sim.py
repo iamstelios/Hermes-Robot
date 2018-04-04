@@ -86,7 +86,6 @@ class BasePickUp(SubInstruction):
 
     def __init__(self, level):
         self.level = level
-        self.websocket = websocket
 
     def run(self):
         print('Picking up box at level %d' % self.level)
@@ -98,14 +97,14 @@ class BasePickUp(SubInstruction):
     def opposite(self):
         return BaseDrop(self.level)
 
+
 class BaseDrop(SubInstruction):
     # Drops item at shelf position
     def __str__(self):
         return 'BaseDrop(%s)' % (self.level)
-    
-    def __init__(self, level, websocket):
+
+    def __init__(self, level):
         self.level = level
-        self.websocket = websocket
 
     def run(self):
         print('Dropping box at level %d' % self.level)

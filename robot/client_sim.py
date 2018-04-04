@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 
-import asyncio
-import websockets
+import argparse
 import json
-import sys
 import re
 from collections import deque
-from subinstruction_sim import *
-import argparse
 
-websocket = None
+import websockets
+
+from subinstruction_sim import *
+
 # ================= HARDCODED MAP =====================
 
 # r for red, g for green, b for blue, y for yellow
@@ -24,6 +23,8 @@ junction_endpoints = [
     {"r": "0", "b": "J1", "y": "1"},
     {"y": "3", "b": "2", "r": "J0"},
 ]
+
+
 
 
 # =================== MAP END =========================
@@ -76,11 +77,11 @@ def pathCalculator(source, destination):
                 pos.number].items() if node == prev_pos.string][0]
             exit = optimal_routes[pos.number][destination.number]
             new_pos = Position(junction_endpoints[pos.number].get(exit))
-            subQueue.append(MoveJunction(entry, exit, websocket))
-            subQueue.append(Move(pos, new_pos, websocket))
+            subQueue.append(MoveJunction(entry, exit, pos))
+            subQueue.append(Move(pos, new_pos))
         else:
             new_pos = Position(endpoint_junction_connection[pos.number])
-            subQueue.append(Move(pos, new_pos, websocket))
+            subQueue.append(Move(pos, new_pos))
         prev_pos = pos
         pos = new_pos
     return subQueue
@@ -96,6 +97,7 @@ class alreadyInPlaceException(Exception):
         self.message = message
 
 
+@asyncio.coroutine
 def go(dst):
     # Robot moves to the destination (faces away from junction and into the node!!)
     print("Instruction: go(%s)" % dst)
@@ -111,6 +113,7 @@ def go(dst):
     return cancelled
 
 
+@asyncio.coroutine
 def retrieve(level, src, dst):
     # Retrives the box from the source base to the destination workstation
     print("Instruction: retrieve(%s,%s,%s)" % (level, src, dst))
@@ -134,18 +137,19 @@ def retrieve(level, src, dst):
         # Face the base
         subQueue.append(Reverse())
 
-    subQueue.append(BasePickUp(level, websocket))
+    subQueue.append(BasePickUp(level))
     subQueue.append(Reverse())
     # Add path to workstation
     subQueue.extend(pathCalculator(source, destination))
 
-    subQueue.append(BaseDrop(1, websocket))
+    subQueue.append(BaseDrop(1))
     subQueue.append(Reverse())
 
     cancelled = yield from queueProcessor(subQueue, uncancellableQueue)
     return cancelled
 
 
+@asyncio.coroutine
 def store(level, src, dst):
     # Stores the box from the source workstation to the destination base
     print("Instruction: store(%s,%s,%s)" % (level, src, dst))
@@ -166,18 +170,19 @@ def store(level, src, dst):
         # Face the workstation
         subQueue.append(Reverse())
 
-    subQueue.append(BasePickUp(1, websocket))
+    subQueue.append(BasePickUp(1))
     subQueue.append(Reverse())
     # Add path to base
     subQueue.extend(pathCalculator(source, destination))
 
-    subQueue.append(BaseDrop(level, websocket))
+    subQueue.append(BaseDrop(level))
     subQueue.append(Reverse())
 
     cancelled = yield from queueProcessor(subQueue, uncancellableQueue)
     return cancelled
 
 
+@asyncio.coroutine
 def transfer(src, dst):
     # Transfer between two workstations
     print("Instruction: transfer(%s,%s)" % (src, dst))
@@ -198,12 +203,12 @@ def transfer(src, dst):
         # Face the workstation
         subQueue.append(Reverse())
 
-    subQueue.append(BasePickUp(1, websocket))
+    subQueue.append(BasePickUp(1))
     subQueue.append(Reverse())
     # Add path to destination workstation
     subQueue.extend(pathCalculator(source, destination))
 
-    subQueue.append(BaseDrop(1, websocket))
+    subQueue.append(BaseDrop(1))
     subQueue.append(Reverse())
 
     cancelled = yield from queueProcessor(subQueue, uncancellableQueue)
@@ -211,7 +216,7 @@ def transfer(src, dst):
 
 
 # -------------------END OF INSTRUCTIONS----------------------------
-
+@asyncio.coroutine
 def queueProcessor(queue, uncancellableQueue=deque()):
     # Excecutes the queue of sub instructions and handles cancelations
     global last_pos
@@ -233,8 +238,7 @@ def queueProcessor(queue, uncancellableQueue=deque()):
         except Exception as e:
             print("Error: SubInstruction failed to execute " + str(e))
         # poll server for cancellation and update position
-        cancelled = (yield last_pos.string, totalInstructions,
-                           totalInstructions - len(queue) - len(uncancellableQueue))
+        cancelled = (yield last_pos.string, totalInstructions, totalInstructions - len(queue) - len(uncancellableQueue))
 
     # Loop until instruction queue is empty
     while queue and not cancelled:
@@ -286,6 +290,7 @@ def queueProcessor(queue, uncancellableQueue=deque()):
     return cancelled
 
 
+@asyncio.coroutine
 def action_caller(instruction):
     action = instruction["action"]
     if action == "go":
