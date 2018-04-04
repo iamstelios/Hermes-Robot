@@ -189,7 +189,7 @@ class GroundMovementController:
              or None if no lines were found
     """
     def _rotate_find_lines(self, dist, sensor):
-        print("_rotate_find_lines", dist)
+        print("_rotate_find_lines(dist={})".format(dist))
 
         sensor.mode = 'COL-REFLECT'
 
@@ -210,7 +210,6 @@ class GroundMovementController:
             val = sensor.value()
             buf.push(val)
             var = buf.var(5)
-            print(val)
             if var > VAR_THRESH and val <= THRESH_REFL:
                 furthest_line = mRight.position
 
@@ -255,10 +254,10 @@ class GroundMovementController:
 
         if self._pkl_dir == MoveDir.LINE_RIGHT:
             sensor = cRight
-            dist = 700
+            dist = 800
         else:
             sensor = cLeft
-            dist = -700
+            dist = -800
 
         self._rotate_find_lines(dist, sensor)
 
