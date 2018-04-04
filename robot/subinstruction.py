@@ -8,6 +8,14 @@ wait_time = 0
 v = VerticalMovementManager()
 g = GroundMovementController()
 
+class SubinstructionError(Exception):
+    """ Used when there is a problem finishing the subinstruction """
+    def __init__(self, msg):
+        # Parameter msg example: "Lost navigation lines"
+        self.msg = msg
+    def __str__(self):
+        return self.msg
+
 class SubInstruction(object):
     """ Abstract class """
     def run(self):

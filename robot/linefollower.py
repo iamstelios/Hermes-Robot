@@ -25,8 +25,6 @@ MIN_REFL = 1
 MAX_REFL = 60
 """ Target value of reflectance for staying on line. """
 TARGET_REFL = 50
-""" Threshold reflectance above which we are definitely seeing white. """
-THRESH_REFL = 30
 
 """
 Stores parameters and provides functionality for following a line using PID.
@@ -157,9 +155,9 @@ class MoveState(Enum):
 
 #@pickled
 class GroundMovementController:
-    LINE_PID = PidRunner(0.55, 0.02, 0.05, 60)
+    LINE_PID = PidRunner(0.55, 0.02, 0.05, 70)
     ROUNDABOUT_PID = PidRunner(0.6, 0.05, 0.3, 75)
-    DOCK_PID = PidRunner(0.65, 0.3, 0, 50)
+    DOCK_PID = PidRunner(0.65, 0.3, 0, 25)
 
     def __init__(self):
         self._pkl_state = MoveState.AT_LINE
@@ -191,24 +189,28 @@ class GroundMovementController:
              or None if no lines were found
     """
     def _rotate_find_lines(self, dist, sensor):
+        print("_rotate_find_lines(dist={})".format(dist))
+
         sensor.mode = 'COL-REFLECT'
 
         buf = RingBuf(0, 5)
 
+        # Threshold reflectance below which we are definitely seeing black
+        THRESH_REFL = 7
         # Threshold of variance above which we are on a black-white edge
-        VAR_THRESH = 30.0
+        VAR_THRESH = 20.0
 
         init_pos = mRight.position
 
-        mLeft.run_to_rel_pos(position_sp = -dist, stop_action="coast")
-        mRight.run_to_rel_pos(position_sp = dist, stop_action="coast")
+        mLeft.run_to_rel_pos(speed_sp = 150, position_sp = -dist, stop_action="coast")
+        mRight.run_to_rel_pos(speed_sp = 150, position_sp = dist, stop_action="coast")
 
         furthest_line = 0
         while mRight.is_running or mLeft.is_running:
             val = sensor.value()
             buf.push(val)
             var = buf.var(5)
-            if var > VAR_THRESH and val > THRESH_REFL:
+            if var > VAR_THRESH and val <= THRESH_REFL:
                 furthest_line = mRight.position
 
         diff = furthest_line - mRight.position
@@ -270,6 +272,6 @@ class GroundMovementController:
             pass
 
     def dock(self):
-        self.follow_line_until('r')
+        self.follow_line_until('r', pid_runner=self.DOCK_PID)
 
 g = GroundMovementController()

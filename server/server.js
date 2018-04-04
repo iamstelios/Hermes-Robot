@@ -6,6 +6,9 @@ var statusRouter = require('./status-router');
 var requestRouter = require('./request-router');
 var userRouter = require('./user-router');
 var Simulation = require('./simulation');
+var logRouter = require('./log-router');
+var mapRouter = require('./map-router');
+var moment = require('moment');
 
 var app = express();
 
@@ -13,23 +16,23 @@ app.use(express.static(`${__dirname}/client/build`));
 
 var port = process.env.PORT || 8080;
 
-//================= HARDCODED MAP =====================
+//================= DEFAULT MAP =====================
 
 //r for red, g for green, b for blue, y for yellow
 bases = [0];
 
-optimal_routes = [['b', 'r', 'g', 'g'], ['y', 'y', 'b', 'r']];
+optimal_routes = [['r', 'y', 'b', 'b'], ['r', 'r', 'b', 'y']];
 
 endpoint_junction_connection = ['J0', 'J0', 'J1', 'J1'];
 
 junction_endpoints = [
-    { "r": "1", "g": "J1", "b": "0" },
-    { "r": "3", "b": "2", "y": "J0" },
+    { "r": "0", "b": "J1", "y": "1" },
+    { "y": "3", "b": "2", "r": "J0" }
 ];
 
 //=================== MAP END =========================
 
-if (process.argv[2] !== "persist") {
+if (process.argv[2] == "clear") {
     // Persistent storage clear
     console.log("Clearing local storage...");
     storage.clearSync();
@@ -45,6 +48,16 @@ storage.storeIfNotStored("inventory", []);
 // Last inventory Id
 storage.storeIfNotStored("lastInvId", 0);
 
+// Map (default)
+storage.storeIfNotStored("bases", bases);
+storage.storeIfNotStored("optimal_routes", optimal_routes);
+storage.storeIfNotStored("endpoint_junction_connection", endpoint_junction_connection);
+storage.storeIfNotStored("junction_endpoints", junction_endpoints);
+
+// Error log
+storage.storeIfNotStored("log", []);
+storage.storeIfNotStored("lastLogId", 0);
+
 // Parse the jason file using the body-parser middleware
 app.use(bodyParser.json());
 
@@ -53,6 +66,8 @@ app.use('/api/inventory', inventoryRouter);
 app.use('/api/status', statusRouter);
 app.use('/api/requests', requestRouter);
 app.use('/api/users', userRouter);
+app.use('/api/log', logRouter);
+app.use('/api/map', mapRouter);
 
 // Start listening
 app.listen(port, function () {
@@ -154,6 +169,15 @@ wss.on('connection', function connection(ws) {
         debugger;
         var message = JSON.parse(data);
         switch (message.status) {
+            case "Retrieve Map":
+                var map = new Object();
+                map.bases = storage.getItemSync("bases");
+                map.optimal_routes = storage.getItemSync("optimal_routes");
+                map.endpoint_junction_connection = storage.getItemSync("endpoint_junction_connection")
+                map.junction_endpoints = storage.getItemSync("junction_endpoints");
+                ws.send(JSON.stringify(map));
+                console.log('send: %s', JSON.stringify(map));
+                break;
             case "Requesting new instruction":
                 setComplete(ws.processRequestId);
 
@@ -213,6 +237,24 @@ wss.on('connection', function connection(ws) {
                 var index = processingRequests.findIndex(request => request.id == ws.processRequestId);
                 processingRequests[index].position = message.position // String
                 console.log(`Position:${processingRequests[index].position}`);
+            case "Error":
+                var logEntry = new Object();
+                var now = moment();
+                var formatted = now.format('YYYY-MM-DD HH:mm:ss Z');
+                var id = storage.mutate("lastLogId", val => val + 1);
+                logEntry.id = id;
+                logEntry.timestamp = formatted;
+                logEntry.robotId = ws.robotId;
+                const requestIndex = storage.getItemSync("requests").findIndex(request => request.id == ws.processRequestId);
+                logEntry.requestId = ws.processRequestId;
+                logEntry.requestTitle = storage.getItemSync("requests")[requestIndex].title;
+                logEntry.error = message.message;
+                // Add the error entry to the log
+                storage.mutate("log", log => {
+                    log.push(logEntry);
+                    return log;
+                });
+            // Removal of the request from the processing list is done in ws "on close"
         }
     });
     ws.on('close', function close() {
@@ -222,17 +264,38 @@ wss.on('connection', function connection(ws) {
             idleRobotIds.splice(index, 1);
         } else {
             // Robot is excecuting a command
-            index = processingRequests.findIndex(request => request.id == ws.processRequestId);
+            const requestIndex = storage.getItemSync("requests").findIndex(request => request.id == ws.processRequestId);
+            // Update the log if not stopped by error
+            var log = storage.getItemSync("log");
+            if (log.findIndex(entry => entry.requestId == ws.processRequestId) == -1) {
+                // TODO IF NEEEDED REFACTOR INTO FUNCTION
+                var logEntry = new Object();
+                var now = moment();
+                var formatted = now.format('YYYY-MM-DD HH:mm:ss Z');
+                var id = storage.mutate("lastLogId", val => val + 1);
+                logEntry.id = id;
+                logEntry.timestamp = formatted;
+                logEntry.robotId = ws.robotId;
+                logEntry.requestId = ws.processRequestId;
+                logEntry.requestTitle = storage.getItemSync("requests")[requestIndex].title;
+                logEntry.error = "Disconnected while processing request";
+                // Add the error entry to the log
+                storage.mutate("log", log => {
+                    log.push(logEntry);
+                    return log;
+                });
+            }
+
             // Remove the request from the processing list
+            index = processingRequests.findIndex(request => request.id == ws.processRequestId);
             processingRequests.splice(index, 1);
             // Change completed property in request history
-            const requestIndex = storage.getItemSync("requests").findIndex(request => request.id == ws.processRequestId);
             storage.mutate("requests", requests => {
                 requests[requestIndex].completed = "disconnected";
-                // Assign the inStorage status to missing
+                // Assign the inStorage status to not instorage
                 var request = requests[requestIndex];
                 if (request.action == "store") {
-                    storage.mutate("inventory", function (inventory) {
+                    storage.mutate("inventory", inventory => {
                         const itemIndex = inventory.findIndex(item => item.code == request.itemCode);
                         inventory[itemIndex].inStorage = false;
                         return inventory;
