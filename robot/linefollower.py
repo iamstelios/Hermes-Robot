@@ -1,8 +1,9 @@
 import time
-from ev3dev.ev3 import LargeMotor, ColorSensor
+from ev3dev.ev3 import LargeMotor, ColorSensor, UltrasonicSensor
 from enum import Enum, IntEnum
 from pickled import pickled
 from ring import RingBuf
+from subinstruction import SubinstructionError
 
 
 mLeft = LargeMotor('outD')
@@ -13,9 +14,12 @@ mLeft.polarity = 'inversed'
 
 cLeft = ColorSensor('in3')
 cRight = ColorSensor('in4')
+u = UltrasonicSensor('in1')
+
+udist_cm = 5
+timelimit = 10
 
 """ Marks which side of the robot the line is on. """
-# TODO did i get sides right?
 class MoveDir(IntEnum):
     LINE_LEFT = -1
     LINE_RIGHT = 1
@@ -30,7 +34,7 @@ TARGET_REFL = 50
 Stores parameters and provides functionality for following a line using PID.
 """
 class PidRunner:
-    """ Non-agressive steering. """
+    """ Aggressive steering. """
     def _steering1(self, course):
         power_left = power_right = self.power
         s = (50 - abs(float(course))) / 50
@@ -44,7 +48,7 @@ class PidRunner:
                 power_left = -self.power
         return (int(power_left), int(power_right))
 
-    """ Aggressive steering. """
+    """ Non-Aggressive steering. """
     def _steering2(self, course):
         if course >= 0:
             if course > 100:
@@ -76,7 +80,8 @@ class PidRunner:
     linesens - line sensor object
     stopcolours - array of colours to stop at
     """
-    def follow_line(self, direction, coloursens, linesens, stopcolours):
+
+    def follow_line(self, direction, coloursens, linesens, stopcolours, collision):
         print("PidRunner.follow_line(direction={},stopcolours={})".format(direction, stopcolours))
 
         # Coerce into list to avoid annoying errors
@@ -110,6 +115,19 @@ class PidRunner:
 
             while colour not in stopcolours:
                 refRead = linesens.value()
+
+                # collision detection
+            if u.distance_centimeters <= udist_cm & collision:
+                mLeft.stop()
+                mRight.stop()
+                timestart = time
+                while u.distance_centimeters <= udist_cm:
+                    timeelapsed = time - timestart
+                    if timeelapsed > timelimit:
+                        # raise exception
+                        raise SubinstructionError('Obstacle Encountered. Recover Unit')
+                    mLeft.run_direct()
+                    mRight.run_direct()
 
                 error = TARGET_REFL - (100 * (refRead - MIN_REFL) / (MAX_REFL - MIN_REFL))
                 derivative = error - lastError
@@ -169,7 +187,8 @@ class GroundMovementController:
         self._pkl_dir = dir
 
     """ Follows a straight line until the given colour is seen. """
-    def follow_line_until(self, colour, pid_runner=LINE_PID):
+
+    def follow_line_until(self, colour, pid_runner=LINE_PID, collision=True):
         if self._pkl_dir == MoveDir.LINE_RIGHT:
             coloursens = cLeft
             linesens = cRight
@@ -272,6 +291,6 @@ class GroundMovementController:
             pass
 
     def dock(self):
-        self.follow_line_until('r', pid_runner=self.DOCK_PID)
+        self.follow_line_until('r', pid_runner=self.DOCK_PID, collision=False)
 
 g = GroundMovementController()
