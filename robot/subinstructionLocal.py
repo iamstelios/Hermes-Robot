@@ -5,9 +5,16 @@ from time import sleep
 wait_time = 4
 #---------------------------------------
 
+class SubinstructionError(Exception):
+    """ Used when there is a problem finishing the subinstruction """
+    def __init__(self, msg):
+        # Parameter msg example: "Lost navigation lines"
+        self.msg = msg
+    def __str__(self):
+        return self.msg
+
 class SubInstruction(object):
     """ Abstract class """
-
     def run(self):
         raise NotImplementedError("run() should be implemented")
 
@@ -33,7 +40,10 @@ class Move(SubInstruction):
         # Exit parameter is the exit that the robot should take,
         # if robot is at the start of node A and it is a junction!
         print('Moving from %s to %s' % (self.nodeA.string, self.nodeB.string))
-
+        
+        #Testing Exception
+        #raise SubinstructionError("Robot lost line")
+        
         # TODO: WRITE CODE FOR MOVEMENT HERE!
         sleep(wait_time)
         print('Arrived at %s' % self.nodeB.string)
@@ -72,7 +82,7 @@ class Reverse(SubInstruction):
 
     def run(self):
         print('Reversing direction')
-
+        
         # TODO: WRITE CODE FOR MOVEMENT HERE!
         sleep(wait_time)
         print('Direction reversed')
