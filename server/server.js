@@ -166,7 +166,7 @@ wss.on('connection', function connection(ws) {
     ws.processRequestId = -1;
     ws.on('message', function incoming(data) {
         console.log('received: %s', data);
-        debugger;
+        // debugger;
         var message = JSON.parse(data);
         switch (message.status) {
             case "Retrieve Map":

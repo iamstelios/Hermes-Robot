@@ -2,7 +2,7 @@ var express = require('express');
 var simulationRouter = express.Router();
 
 simulationRouter.get('/state/', function (req, res) {
-    debugger;
+    // debugger;
     var state = [];
     simulatedRobots.forEach(function (robot) {
         state.push({
@@ -35,7 +35,7 @@ function Simulation(app, wss) {
             var message = JSON.parse(data);
             switch (message.status) {
                 case "Simulation state update":
-                    debugger;
+                    // debugger;
                     var response = testProposedState(robotIndexFromWebSocket(ws), message);
                     ws.send(response);
                     console.log('sent (resp: %d): %s', message.updateId, response);
@@ -77,7 +77,7 @@ function robotIndexFromWebSocket(ws) {
 
 function testProposedState(robotIndex, message) {
     console.log('received[%d]: %s', robotIndex, JSON.stringify(message));
-    debugger;
+    // debugger;
     var response = '{"result": "Fail"}';
 
     switch (message.status) {
@@ -88,29 +88,26 @@ function testProposedState(robotIndex, message) {
                 response = response = JSON.stringify({"result": "Success", "id": message.updateId});
                 break;
             }
-            switch (message.onJunction) {
-                case true:
-                    console.log("-> on junction");
-                    if (canUseJunction(robotIndex, message.position)) {
-                        console.log("-> -> can use junction");
-                        apply(robotIndex, message);
-                        response = JSON.stringify({"result": "Success", "id": message.updateId});
-                    } else {
-                        console.log("-> -> will collide");
-                        response = '{"result": "Fail", "reason": "Obstruction"}';
-                    }
-                    break;
-                case false:
-                    console.log("-> on line");
-                    if (!willCollide(robotIndex, message.position)) {
-                        console.log("-> -> won't collide");
-                        apply(robotIndex, message);
-                        response = JSON.stringify({"result": "Success", "id": message.updateId});
-                    } else {
-                        console.log("-> ->  will Collide");
-                        response = '{"result": "Fail", "reason": "Obstruction"}';
-                    }
-                    break;
+            if (message.onJunction === true) {
+                console.log("-> on junction");
+                if (canUseJunction(robotIndex, message.position)) {
+                    console.log("-> -> can use junction");
+                    apply(robotIndex, message);
+                    response = JSON.stringify({"result": "Success", "id": message.updateId});
+                } else {
+                    console.log("-> -> will collide");
+                    response = '{"result": "Fail", "reason": "Obstruction"}';
+                }
+            } else if (message.onJunction === false) {
+                console.log("-> on line");
+                if (!willCollide(robotIndex, message.position)) {
+                    console.log("-> -> won't collide");
+                    apply(robotIndex, message);
+                    response = JSON.stringify({"result": "Success", "id": message.updateId});
+                } else {
+                    console.log("-> ->  will Collide");
+                    response = '{"result": "Fail", "reason": "Obstruction"}';
+                }
             }
             break;
     }
@@ -131,19 +128,42 @@ function apply(robotIndex, message) {
 function willCollide(ws, proposedPosition) {
     for (i = 0; i < simulatedRobots.length; i++) {
         if (simulatedRobots[i].robotId !== ws.robotId) {
-            isCollision(proposedPosition, simulatedRobots[i].position);
+            if (isCollision(proposedPosition, simulatedRobots[i].position)) {
+                return true;
+            }
         }
     }
     return false;
 }
 
-function isCollision(positionA, positionB) {
-
+function isCollision(robotIndex, position) {
+    var checkRobot = simulatedRobots[robotIndex];
+    var startAndEnd = [checkRobot.startNode, checkRobot.endNode];
+    for (var robot in simulatedRobots) {
+        if (robot.isMoving === false) {
+            if (checkRobot.endNode === robot.node) {
+                debugger;
+                return true;
+            }
+        }
+        if (startAndEnd.find(robot.startNode) !== -1 && startAndEnd.find(robot.endNode) !== -1) {
+            var oppositeDir = robot.startNode === checkRobot.endNode;
+            if (oppositeDir) {
+                return !checkRobot.isPassing
+                    && checkRobot.startNode < checkRobot.endNode
+                    && Math.abs(robot.progress - (100 - checkRobot.progress)) < 30;
+            } else {
+                return checkRobot.progress < robot.progress
+                    && Math.abs(robot.progress - checkRobot.progress) < 30;
+            }
+        }
+    }
     return false;
 }
 
-function canUseJunction(ws, proposedPosition) {
-    return true
+function canUseJunction(robotIndex, position) {
+    return true;
+
 }
 
 module.exports = Simulation;

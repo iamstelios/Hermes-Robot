@@ -111,7 +111,7 @@ class Simulation extends Component {
             // console.log("RENDER");
             stateFetch.value.forEach(robot => {
                 // console.log("robot is ...");
-                console.log(robot);
+                // console.log(robot);
                 const idString = robot.id.toString();
                 if (robot.isMoving === false) {
                     const node = nodes.find(node => node.id === robot.position.node);
@@ -136,6 +136,7 @@ class Simulation extends Component {
                     };
                     setRobotState(robot, obj);
                 } else {
+                    // on line
                     // console.log(nodes);
                     const startNode = nodes.find(node => node.id === robot.position.startNode);
                     const endNode = nodes.find(node => node.id === robot.position.endNode);
