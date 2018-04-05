@@ -13,15 +13,24 @@ from subinstruction_sim import *
 
 # r for red, g for green, b for blue, y for yellow
 
-bases = set([0])
+bases = set([0,6])
 
-optimal_routes = [['r', 'y', 'b', 'b'], ['r', 'r', 'b', 'y']]
+optimal_routes = [["r", "y", "b", "b", "b", "b", "b", "b", "b", "b", "b"],
+        ["g", "g", "r", "b", "y", "y", "y", "y", "y", "y", "y"],
+        ["r", "r", "r", "r", "b", "b", "y", "g", "g", "g", "g"],
+        ["g", "g", "g", "g", "r", "y", "g", "g", "g", "g", "g"],
+        ["b", "b", "b", "b", "b", "b", "b", "g", "y", "y", "y"],
+        ["r", "r", "r", "r", "r", "r", "r", "r", "g", "b", "y"]]
 
-endpoint_junction_connection = ['J0', 'J0', 'J1', 'J1']
+endpoint_junction_connection = ["J0", "J0", "J1", "J1","J3","J3","J2","J4","J5","J5","J5"]
 
 junction_endpoints = [
-    {"r": "0", "b": "J1", "y": "1"},
-    {"y": "3", "b": "2", "r": "J0"},
+   { "r": "0", "b": "J1", "y": "1" },
+   { "r": "2", "b": "3", "y":"J2","g": "J0" },
+   { "r": "J1", "b": "J3", "y":"6","g": "J4" },
+   { "r": "4", "y":"5","g": "J2" },
+   { "b": "J2", "y":"J5","g": "7" },
+   { "r": "J4", "b": "9", "y":"10","g": "8" }
 ]
 
 
