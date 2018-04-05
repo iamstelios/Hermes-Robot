@@ -23,7 +23,7 @@ class Root extends React.Component {
                 <div className="device-md visible-md"></div>
                 <div className="device-lg visible-lg"></div>
             </AlertProvider>
-        )
+        );
     }
 }
 

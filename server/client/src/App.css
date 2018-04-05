@@ -59,7 +59,7 @@
     color: grey;
 }
 
-#user-button-bar {
+#user-button-bar, #inv-button-bar, #add-button-bar {
     float: right;
     height: 6vh;
     padding-right: 10px;
