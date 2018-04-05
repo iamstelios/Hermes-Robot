@@ -1,6 +1,7 @@
 import React, {Component} from 'react'
 import {
     Tabs,
+    Table,
     Tab,
     Grid,
     Row,
@@ -19,6 +20,7 @@ import './App.css'
 import RequestPane from './RequestPane'
 import Inventory from './Inventory'
 import Simulation from './Simulation'
+import Log from './Log'
 
 
 class App extends Component {
@@ -77,69 +79,70 @@ class App extends Component {
 
     render() {
         return (<div className="App">
-                <Grid fluid={true}>
-                    <Row className="App-header">
-                        <Col xs={12}>
-                            <ButtonToolbar id="user-button-bar">
-                                <DropdownButton id="user-dropdown" bsStyle="default" title={"User " + this.state.userId}
-                                                key="0"
-                                                onSelect={(eventKey, event) => this.setState({userId: eventKey})}>
-                                    <MenuItem eventKey={1}>1</MenuItem>
-                                    <MenuItem eventKey={2}>2</MenuItem>
-                                    <MenuItem eventKey={3}>3</MenuItem>
-                                </DropdownButton>
-                            </ButtonToolbar>
-                            <h1 className="App-title">Project Hermes</h1>
-                        </Col>
-                    </Row>
-                    <Row className="content">
-                        <Col className="App-pane App-left-pane" sm={7} lg={9}>
-                            <Tabs defaultActiveKey={1} id="uncontrolled-tab-example">
-                                <Tab eventKey={1} title="Browse Inventory">
-                                    <h1>Inventory</h1>
-                                    <hr/>
-                                    <Inventory userId={this.state.userId}/>
-                                </Tab>
-                                <Tab eventKey={2} title="Add item">
-                                    <h1>Store an new item to the inventory...</h1>
-                                    <hr/>
-                                    <Well bsSize="large">
-                                        <form>
-                                            <FormGroup
-                                                controlId="formBasicText"
-                                            >
-                                                <ControlLabel>Item name:</ControlLabel>
-                                                <FormControl
-                                                    type="text"
-                                                    value={this.state.value}
-                                                    placeholder="Enter name"
-                                                    onChange={this.handleChange}
-                                                />
-                                            </FormGroup>
-                                            <Button onClick={(e) => this.handleSubmit(e)} className="full-width"
-                                                    bsStyle="primary">
-                                                Request storage box for item
-                                            </Button>
-                                        </form>
-                                    </Well>
-                                </Tab>
-                                <Tab eventKey={3} title="Map">
-                                    <canvas id="map" width="1000" height="600"></canvas>
-                                </Tab>
-                                <Tab eventKey={4} title="MapV2">
-                                    <Simulation/>
-                                </Tab>
-                            </Tabs>
-                        </Col>
-                        <Col className="App-pane App-right-pane" sm={5} lg={3}>
-                            <RequestPane userId={this.state.userId}/>
-                        </Col>
-                    </Row>
-                </Grid>
+            <Grid fluid={true}>
+                <Row className="App-header">
+                    <Col xs={12}>
+                        <ButtonToolbar id="user-button-bar">
+                            <DropdownButton id="user-dropdown" bsStyle="default" title={"User " + this.state.userId}
+                                            key="0"
+                                            onSelect={(eventKey, event) => this.setState({userId: eventKey})}>
+                                <MenuItem eventKey={1}>1</MenuItem>
+                                <MenuItem eventKey={2}>2</MenuItem>
+                                <MenuItem eventKey={3}>3</MenuItem>
+                            </DropdownButton>
+                        </ButtonToolbar>
+                        <h1 className="App-title">Project Hermes</h1>
+                    </Col>
+                </Row>
+                <Row className="content">
+                    <Col className="App-pane App-left-pane" sm={7} lg={9}>
+                        <Tabs defaultActiveKey={1} id="uncontrolled-tab-example">
+                            <Tab eventKey={1} title="Browse Inventory">
+                                <h1>Inventory</h1>
+                                <hr/>
+                                <Inventory userId={this.state.userId}/>
+                            </Tab>
+                            <Tab eventKey={2} title="Add item">
+                                <h1>Store an new item to the inventory...</h1>
+                                <hr/>
+                                <Well bsSize="large">
+                                    <form>
+                                        <FormGroup
+                                            controlId="formBasicText"
+                                        >
+                                            <ControlLabel>Item name:</ControlLabel>
+                                            <FormControl
+                                                type="text"
+                                                value={this.state.value}
+                                                placeholder="Enter name"
+                                                onChange={this.handleChange}
+                                            />
+                                        </FormGroup>
+                                        <Button onClick={(e) => this.handleSubmit(e)} className="full-width"
+                                                bsStyle="primary">
+                                            Request storage box for item
+                                        </Button>
+                                    </form>
+                                </Well>
+                            </Tab>
+                            <Tab eventKey={3} title="Map">
+                                <Simulation/>
+                            </Tab>
 
-            </div>
-        );
+                            <Tab eventKey={4} title="Error Log">
+                                <Log/>
+                            </Tab>
+                        </Tabs>
+                    </Col>
+                    <Col className="App-pane App-right-pane" sm={5} lg={3}>
+                        <RequestPane userId={this.state.userId}/>
+                    </Col>
+                </Row>
+            </Grid>
+
+        </div>);
     }
+
 }
 
 export default withAlert(App);
