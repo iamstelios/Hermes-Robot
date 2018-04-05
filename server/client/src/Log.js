@@ -20,7 +20,7 @@ class Log extends Component {
         } else if (logFetch.fulfilled) {
             let array = logFetch.value.sort((itemA, itemB) =>  itemB.id - itemA.id);
             let rows = array.map(logItem => (
-                <tr>
+                <tr key={logItem.id}>
                     <td>{logItem.id}</td>
                     <td>{logItem.timestamp}</td>
                     <td>#{logItem.robotId}</td>
