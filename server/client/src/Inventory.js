@@ -163,7 +163,7 @@ class Inventory extends Component {
                                         Retrieve
                                     </Button>
                                     <Button onClick={(e) => this.handleSubmit(item, "store", e)} className="half-width"
-                                            bsStyle="primary">
+                                            bsStyle="primary" disabled={item.inStorage}>
                                         Store
                                     </Button>
                                 </Panel.Body>
