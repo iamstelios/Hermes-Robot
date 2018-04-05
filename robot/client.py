@@ -269,6 +269,7 @@ def queueProcessor(queue, uncancellableQueue=deque()):
         cancelled = (yield last_pos.string, totalInstructions,
                      totalInstructions-len(queue)-len(uncancellableQueue))
 
+    precancelled = cancelled
     # if cancelled then run reverse stack and confirm to server
     firstMovement = True
     totalInstructions = len(reverseStack)
@@ -306,7 +307,7 @@ def queueProcessor(queue, uncancellableQueue=deque()):
         # Send position to the server
         yield last_pos.string, totalInstructions, totalInstructions - len(reverseStack)
 
-    if cancelled and totalInstructions > 1:
+    if precancelled or (cancelled and totalInstructions > 1):
         # Reverse such that the robot faces the junction
         try:
             Reverse().run()
@@ -337,7 +338,7 @@ def action_caller(instruction):
         level = instruction["level"]
         src = instruction["src"]
         dst = instruction["dst"]
-       try:
+        try:
             yield from retrieve(level, src, dst)
         except SubinstructionError as e:
             raise e
@@ -416,7 +417,7 @@ def handler(ip):
                         gen)
                 except alreadyInPlaceException:
                     continue
-                 except SubinstructionError as e:
+                except SubinstructionError as e:
                     message = e.__str__()
                     yield from subinstructionErrorHandler(message, websocket)
 

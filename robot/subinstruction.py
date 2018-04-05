@@ -49,11 +49,16 @@ class MoveJunction(SubInstruction):
         # that the robot should take at the junction: 'y' for yellow etc.
         print('Junction entry: %s, exit: %s' % (self.entry, self.exit))
 
-        g.follow_line_until(self.entry)
-        g.swap_line_side()
-        g.follow_line_until(self.exit, pid_runner=GroundMovementController.ROUNDABOUT_PID)
-        g.swap_line_side()
-        g.follow_line_until('bk')
+        noswap_routes = [ ('b', 'r'), ('r', 'y'), ('y', 'b') ]
+        if (self.entry, self.exit) in noswap_routes:
+            g.follow_line_until(self.entry)
+            g.follow_line_until('bk', pid_runner=GroundMovementController.ROUNDABOUT_PID)
+        else:
+            g.follow_line_until(self.entry)
+            g.swap_line_side()
+            g.follow_line_until(self.exit, pid_runner=GroundMovementController.ROUNDABOUT_PID)
+            g.exit_junction()
+            g.follow_line_until('bk')
 
         print('Junction movement finished')
 
@@ -107,7 +112,7 @@ class BasePickUp(SubInstruction):
         v.move_to(LiftPos.above(pos))
 
         # move back a bit
-        g.move_raw(-300)
+        g.move_raw(-450)
 
         # lower grabber level to BOTTOM
         v.move_to(LiftPos.BOTTOM)
@@ -136,7 +141,7 @@ class BaseDrop(SubInstruction):
         v.move_to(pos)
 
         # move back
-        g.move_raw(-300)
+        g.move_raw(-450)
 
         # return grabber to BOTTOM position for stability
         v.move_to(LiftPos.BOTTOM)

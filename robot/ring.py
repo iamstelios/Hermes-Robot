@@ -65,6 +65,14 @@ class RingBuf:
 
         return var / n
 
+    """
+    Computes the average gradient of the last n values, assuming dx = 1
+    between each consecutive value.
+    """
+    def diff(self, n):
+        diffs = [ (self.get(i) - self.get(i + 1)) for i in range(0, n) ]
+        return sum(diffs) / len(diffs)
+
     """ Readable representation. """
     def __str__(self):
         fmt = '[ '

@@ -195,7 +195,7 @@ class VerticalMovementManager:
 
             # Move up to sensor at full speed, pray it doesn't miss
             mvd = self._move_while(lambda: not see_mag(), sign)
-            if mvd != self._MoveWhileResult.COND:
+            if mvd != self._MoveWhileResult.COND and mvd != self._MoveWhileResult.OVER_RANGE:
                 raise ValueError("ERROR: Sensor not within reach. Move result: " + str(mvd))
 
             # Scale the peak to get to the center, use reduced speed for accuracy
