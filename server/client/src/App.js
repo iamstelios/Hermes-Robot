@@ -21,6 +21,7 @@ import RequestPane from './RequestPane'
 import Inventory from './Inventory'
 import Simulation from './Simulation'
 import Log from './Log'
+import History from './History'
 
 
 class App extends Component {
@@ -128,9 +129,11 @@ class App extends Component {
                             <Tab eventKey={3} title="Map">
                                 <Simulation/>
                             </Tab>
-
                             <Tab eventKey={4} title="Error Log">
                                 <Log/>
+                            </Tab>
+                            <Tab eventKey={5} title="Request History">
+                                <History/>
                             </Tab>
                         </Tabs>
                     </Col>
