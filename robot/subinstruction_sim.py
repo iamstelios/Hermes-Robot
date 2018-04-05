@@ -152,6 +152,7 @@ class Reverse(SubInstruction):
     def run(self):
         print('Reversing direction')
 
+        sleep(2.4)
         return None
 
     def opposite(self):
@@ -184,7 +185,7 @@ class BasePickUp(SubInstruction):
 
     def run(self):
         print('Picking up box at level %d' % self.level)
-
+        sleep(12)
         print('Picked up box at level %d' % self.level)
 
         return None
@@ -203,7 +204,7 @@ class BaseDrop(SubInstruction):
 
     def run(self):
         print('Dropping box at level %d' % self.level)
-
+        sleep(12)
         print('Dropped box at level %d' % self.level)
 
         return None
