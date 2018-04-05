@@ -22,115 +22,115 @@
     -->
     <title>Project Hermes</title>
 </head>
-<body onload="draw();">
+<body>
 <noscript>
     You need to enable JavaScript to run this app.
 </noscript>
 <div id="root"></div>
-<script>
-    function draw() {
-        var canvas = document.getElementById('map');
-        var ctx = canvas.getContext('2d');
-        var raf;
-        var WIDTH = 121.0;
-        var HEIGHT = 121.0;
-        var boxWidth = 50;
-        var boxHeight = 50;
-        var topPos = canvas.height / 2 - canvas.height * .3;
-        var botPos = canvas.height / 2 + canvas.height * .3 - boxHeight;
-        var rightPos = canvas.width / 2 + canvas.width * .3 - boxWidth;
-        var leftPos = canvas.width / 2 - canvas.width * .3;
-        ctx.fillStyle = 'rgb(255, 255, 255)';
-        // .fillRect(x, y, width, height)
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+<!--<script>-->
+    <!--function draw() {-->
+        <!--var canvas = document.getElementById('map');-->
+        <!--var ctx = canvas.getContext('2d');-->
+        <!--var raf;-->
+        <!--var WIDTH = 121.0;-->
+        <!--var HEIGHT = 121.0;-->
+        <!--var boxWidth = 50;-->
+        <!--var boxHeight = 50;-->
+        <!--var topPos = canvas.height / 2 - canvas.height * .3;-->
+        <!--var botPos = canvas.height / 2 + canvas.height * .3 - boxHeight;-->
+        <!--var rightPos = canvas.width / 2 + canvas.width * .3 - boxWidth;-->
+        <!--var leftPos = canvas.width / 2 - canvas.width * .3;-->
+        <!--ctx.fillStyle = 'rgb(255, 255, 255)';-->
+        <!--// .fillRect(x, y, width, height)-->
+        <!--ctx.fillRect(0, 0, canvas.width, canvas.height);-->
 
 
-        ctx.strokeStyle = 'rgb(0, 0, 0,)';
-        //Top Line
-        {
-            ctx.beginPath();
-            ctx.moveTo(leftPos + boxWidth / 2, topPos + boxHeight / 2);
-            ctx.lineTo(rightPos + boxWidth / 2, topPos + boxHeight / 2);
-            ctx.lineWidth = 5;
-            ctx.stroke();
-        }
+        <!--ctx.strokeStyle = 'rgb(0, 0, 0,)';-->
+        <!--//Top Line-->
+        <!--{-->
+            <!--ctx.beginPath();-->
+            <!--ctx.moveTo(leftPos + boxWidth / 2, topPos + boxHeight / 2);-->
+            <!--ctx.lineTo(rightPos + boxWidth / 2, topPos + boxHeight / 2);-->
+            <!--ctx.lineWidth = 5;-->
+            <!--ctx.stroke();-->
+        <!--}-->
 
-        //Bottom Line
-        {
-            ctx.beginPath();
-            ctx.moveTo(leftPos + boxWidth / 2, botPos + boxHeight / 2);
-            ctx.lineTo(rightPos + boxWidth / 2, botPos + boxHeight / 2);
-            ctx.lineWidth = 5;
-            ctx.stroke();
-        }
+        <!--//Bottom Line-->
+        <!--{-->
+            <!--ctx.beginPath();-->
+            <!--ctx.moveTo(leftPos + boxWidth / 2, botPos + boxHeight / 2);-->
+            <!--ctx.lineTo(rightPos + boxWidth / 2, botPos + boxHeight / 2);-->
+            <!--ctx.lineWidth = 5;-->
+            <!--ctx.stroke();-->
+        <!--}-->
 
-        //Vertical Line
-        {
-            ctx.beginPath();
-            ctx.moveTo(canvas.width / 2, topPos + boxHeight / 2);
-            ctx.lineTo(canvas.width / 2, botPos + boxHeight / 2);
-            ctx.lineWidth = 5;
-            ctx.stroke();
-        }
+        <!--//Vertical Line-->
+        <!--{-->
+            <!--ctx.beginPath();-->
+            <!--ctx.moveTo(canvas.width / 2, topPos + boxHeight / 2);-->
+            <!--ctx.lineTo(canvas.width / 2, botPos + boxHeight / 2);-->
+            <!--ctx.lineWidth = 5;-->
+            <!--ctx.stroke();-->
+        <!--}-->
 
 
-        //Top Junction
-        ctx.fillStyle = 'rgb(255, 255, 255)';
-        {
-            ctx.beginPath();
-            ctx.arc(canvas.width / 2, topPos + boxHeight / 2, 40, 0, 2 * Math.PI);
-            ctx.closePath();
-            ctx.fill();
-            ctx.lineWidth = 5;
-            ctx.stroke();
-        }
+        <!--//Top Junction-->
+        <!--ctx.fillStyle = 'rgb(255, 255, 255)';-->
+        <!--{-->
+            <!--ctx.beginPath();-->
+            <!--ctx.arc(canvas.width / 2, topPos + boxHeight / 2, 40, 0, 2 * Math.PI);-->
+            <!--ctx.closePath();-->
+            <!--ctx.fill();-->
+            <!--ctx.lineWidth = 5;-->
+            <!--ctx.stroke();-->
+        <!--}-->
 
-        //Bottom Junction
-        ctx.fillStyle = 'rgb(255, 255, 255)';
-        {
-            ctx.beginPath();
-            ctx.arc(canvas.width / 2, botPos + boxHeight / 2, 40, 0, 2 * Math.PI);
-            ctx.closePath();
-            ctx.fill();
-            ctx.lineWidth = 5;
-            ctx.stroke();
-        }
+        <!--//Bottom Junction-->
+        <!--ctx.fillStyle = 'rgb(255, 255, 255)';-->
+        <!--{-->
+            <!--ctx.beginPath();-->
+            <!--ctx.arc(canvas.width / 2, botPos + boxHeight / 2, 40, 0, 2 * Math.PI);-->
+            <!--ctx.closePath();-->
+            <!--ctx.fill();-->
+            <!--ctx.lineWidth = 5;-->
+            <!--ctx.stroke();-->
+        <!--}-->
 
-        //Top Left
-        ctx.fillStyle = 'rgb(0, 0, 0)';
-        {
-            ctx.fillRect(leftPos, topPos, boxWidth, boxHeight);
-            ctx.font = "18px sans-serif";
-            ctx.fillText("Storage", leftPos, topPos + 1.4 * boxHeight);
-        }
+        <!--//Top Left-->
+        <!--ctx.fillStyle = 'rgb(0, 0, 0)';-->
+        <!--{-->
+            <!--ctx.fillRect(leftPos, topPos, boxWidth, boxHeight);-->
+            <!--ctx.font = "18px sans-serif";-->
+            <!--ctx.fillText("Storage", leftPos, topPos + 1.4 * boxHeight);-->
+        <!--}-->
 
-        //Top Right
-        ctx.fillStyle = 'rgb(0, 0, 0)';
-        {
-            ctx.fillRect(rightPos, topPos, boxWidth, boxHeight);
-            ctx.font = "18px sans-serif";
-            ctx.fillText("Workstation 1", rightPos, topPos + 1.4 * boxHeight);
-        }
+        <!--//Top Right-->
+        <!--ctx.fillStyle = 'rgb(0, 0, 0)';-->
+        <!--{-->
+            <!--ctx.fillRect(rightPos, topPos, boxWidth, boxHeight);-->
+            <!--ctx.font = "18px sans-serif";-->
+            <!--ctx.fillText("Workstation 1", rightPos, topPos + 1.4 * boxHeight);-->
+        <!--}-->
 
-        //Bottom Left
-        ctx.fillStyle = 'rgb(0, 0, 0)';
-        {
-            ctx.fillRect(leftPos, botPos, boxWidth, boxHeight);
-            ctx.font = "18px sans-serif";
-            ctx.fillText("Workstation 2", leftPos, botPos + 1.4 * boxHeight);
-        }
+        <!--//Bottom Left-->
+        <!--ctx.fillStyle = 'rgb(0, 0, 0)';-->
+        <!--{-->
+            <!--ctx.fillRect(leftPos, botPos, boxWidth, boxHeight);-->
+            <!--ctx.font = "18px sans-serif";-->
+            <!--ctx.fillText("Workstation 2", leftPos, botPos + 1.4 * boxHeight);-->
+        <!--}-->
 
-        //Bottom Right
-        ctx.fillStyle = 'rgb(0, 0, 0)';
-        {
-            ctx.fillRect(rightPos, botPos, boxWidth, boxHeight);
-            ctx.font = "18px sans-serif";
-            ctx.fillText("Workstation 4", rightPos, botPos + 1.4 * boxHeight);
-        }
+        <!--//Bottom Right-->
+        <!--ctx.fillStyle = 'rgb(0, 0, 0)';-->
+        <!--{-->
+            <!--ctx.fillRect(rightPos, botPos, boxWidth, boxHeight);-->
+            <!--ctx.font = "18px sans-serif";-->
+            <!--ctx.fillText("Workstation 4", rightPos, botPos + 1.4 * boxHeight);-->
+        <!--}-->
 
-    }
+    <!--}-->
 
-</script>
+<!--</script>-->
 <!--
   This HTML file is a template.
   If you open it directly in the browser, you will see an empty page.

@@ -5,6 +5,7 @@ var inventoryRouter = require('./inventory-router');
 var statusRouter = require('./status-router');
 var requestRouter = require('./request-router');
 var userRouter = require('./user-router');
+var Simulation = require('./simulation');
 var logRouter = require('./log-router');
 var mapRouter = require('./map-router');
 var moment = require('moment');
@@ -79,7 +80,9 @@ var WebSocket = require('ws');
 // Holds all the robots websockets
 robots = [];
 
-var wss = new WebSocket.Server({ port: 8000 });
+var wss = new WebSocket.Server({port: 8000});
+
+var sim = new Simulation(app, new WebSocket.Server({port: 8001}));
 
 // Indexes of the robots that are not processing an instruction
 idleRobotIds = [];
@@ -163,7 +166,7 @@ wss.on('connection', function connection(ws) {
     ws.processRequestId = -1;
     ws.on('message', function incoming(data) {
         console.log('received: %s', data);
-        debugger;
+        // debugger;
         var message = JSON.parse(data);
         switch (message.status) {
             case "Retrieve Map":
@@ -207,7 +210,7 @@ wss.on('connection', function connection(ws) {
                     //Save the id for later use
                     ws.processRequestId = request.id;
                     //Add the request to the processing list
-                    processingRequests.push({ "id": ws.processRequestId, "robotId": ws.robotId });
+                    processingRequests.push({"id": ws.processRequestId, "robotId": ws.robotId});
                 } else {
                     // No instruction in the queue thus add to iddle list
                     idleRobotIds.push(ws.robotId);
