@@ -29,7 +29,11 @@ class App extends Component {
         super(props);
         this.state = {
             userId: 1,
-            value: ""
+            invMode: "normal",
+            addMode: "normal",
+            value: "",
+            location: "",
+            level: ""
         };
 
         this.handleChange = this.handleChange.bind(this);
@@ -42,15 +46,18 @@ class App extends Component {
     }
 
     handleSubmit(e) {
+        let requestor = (this.state.addMode === "admin") ? "admin" : "user";
+        let body = (this.state.addMode === "admin") ? JSON.stringify({name: this.state.value, location: this.state.location, level: this.state.level }) : JSON.stringify({name: this.state.value});
+        let message = (this.state.addMode === "admin") ? "Adding item" : "Requesting box...";
         fetch('/api/inventory/', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
-                'Requestor': 'user',
+                'Requestor': requestor,
                 'User': this.state.userId
             },
-            body: JSON.stringify({name: this.state.value})
+            body: body
         })
             .then(response => {
                 if (!response.ok) {
@@ -70,7 +77,7 @@ class App extends Component {
                         type: 'error'
                     });
                 } else {
-                    this.props.alert.show(`Requesting box...`, {
+                    this.props.alert.show(message, {
                         timeout: 2000,
                         type: 'success'
                     });
@@ -84,12 +91,13 @@ class App extends Component {
                 <Row className="App-header">
                     <Col xs={12}>
                         <ButtonToolbar id="user-button-bar">
-                            <DropdownButton id="user-dropdown" bsStyle="default" title={"User " + this.state.userId}
+                            <DropdownButton id="user-dropdown" bsStyle="default" title={"User: " + this.state.userId}
                                             key="0"
                                             onSelect={(eventKey, event) => this.setState({userId: eventKey})}>
                                 <MenuItem eventKey={1}>1</MenuItem>
                                 <MenuItem eventKey={2}>2</MenuItem>
                                 <MenuItem eventKey={3}>3</MenuItem>
+                                <MenuItem eventKey={4}>Admin</MenuItem>
                             </DropdownButton>
                         </ButtonToolbar>
                         <h1 className="App-title">Project Hermes</h1>
@@ -99,12 +107,33 @@ class App extends Component {
                     <Col className="App-pane App-left-pane" sm={7} lg={9}>
                         <Tabs defaultActiveKey={1} id="uncontrolled-tab-example">
                             <Tab eventKey={1} title="Browse Inventory">
-                                <h1>Inventory</h1>
+                                <h1>Inventory
+                                    {(this.state.userId === 4) && <ButtonToolbar id="inv-button-bar">
+                                        <DropdownButton id="inv-dropdown" bsStyle="default"
+                                                        title={"Mode: " + this.state.invMode}
+                                                        key="0"
+                                                        onSelect={(eventKey, event) => this.setState({invMode: eventKey})}>
+                                            <MenuItem eventKey={"normal"}>Normal Mode</MenuItem>
+                                            <MenuItem eventKey={"admin"}>Admin Mode</MenuItem>
+                                        </DropdownButton>
+                                    </ButtonToolbar>}
+                                </h1>
                                 <hr/>
-                                <Inventory userId={this.state.userId}/>
+
+                                <Inventory userId={this.state.userId} invMode={this.state.invMode}/>
                             </Tab>
                             <Tab eventKey={2} title="Add item">
-                                <h1>Store an new item to the inventory...</h1>
+                                <h1>Store an new item to the inventory...
+                                    {(this.state.userId === 4) && <ButtonToolbar id="add-button-bar">
+                                        <DropdownButton id="add-dropdown" bsStyle="default"
+                                                        title={"Mode: " + this.state.addMode}
+                                                        key="0"
+                                                        onSelect={(eventKey, event) => this.setState({addMode: eventKey})}>
+                                            <MenuItem eventKey={"normal"}>Normal Mode</MenuItem>
+                                            <MenuItem eventKey={"admin"}>Admin Mode</MenuItem>
+                                        </DropdownButton>
+                                    </ButtonToolbar>}
+                                    </h1>
                                 <hr/>
                                 <Well bsSize="large">
                                     <form>
@@ -114,14 +143,29 @@ class App extends Component {
                                             <ControlLabel>Item name:</ControlLabel>
                                             <FormControl
                                                 type="text"
-                                                value={this.state.value}
+                                                value={this.state.itemName}
                                                 placeholder="Enter name"
                                                 onChange={this.handleChange}
                                             />
+                                            {(this.state.addMode === "admin") && <ControlLabel>Location:</ControlLabel>}
+                                            {(this.state.addMode === "admin") && <FormControl
+                                                type="text"
+                                                value={this.state.itemLocation}
+                                                placeholder="Enter location"
+                                                onChange={this.handleChange}
+                                            />}
+                                            {(this.state.addMode === "admin") &&
+                                            <ControlLabel>Shelf level:</ControlLabel>}
+                                            {(this.state.addMode === "admin") && <FormControl
+                                                type="text"
+                                                value={this.state.itemLevel}
+                                                placeholder="Enter level"
+                                                onChange={this.handleChange}
+                                            />}
                                         </FormGroup>
                                         <Button onClick={(e) => this.handleSubmit(e)} className="full-width"
                                                 bsStyle="primary">
-                                            Request storage box for item
+                                            {(this.state.addMode === "admin") ? <span>Add item</span> : <span>Request storage box for item</span> }
                                         </Button>
                                     </form>
                                 </Well>

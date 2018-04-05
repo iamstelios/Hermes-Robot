@@ -42,6 +42,17 @@ class Inventory extends Component {
                     }
                 });
                 break;
+            case "delete":
+                // show alert that request is being sent to server
+                this.props.alert.show(`Deleting ${item.name}`, {
+                    timeout: 2000,
+                    type: 'info',
+                    code: item.code,
+                    onOpen: () => {
+                        this.deleteItem(item.code);
+                    }
+                });
+                break;
         }
 
 
@@ -89,6 +100,38 @@ class Inventory extends Component {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({action: 'retrieve', itemCode: itemCode, dst: this.props.userId.toString()})
+        })
+            .then(response => {
+                if (!response.ok) {
+                    this.props.alert.show(`Request Failed`, {
+                        timeout: 2000,
+                        type: 'error',
+                        onOpen: () => {
+                            this.props.alert.alerts.find(a => a.options.code === itemCode).close()
+                        }
+                    });
+                }
+                return response
+            })
+            .then(r => r.json())
+            .then(r => {
+                this.props.alert.show(`Request Submitted (#${r.id})`, {
+                    timeout: 2000,
+                    type: 'success',
+                    onOpen: () => {
+                        this.props.alert.alerts.find(a => a.options.code === itemCode).close()
+                    }
+                });
+            });
+    }
+
+    deleteItem(itemCode) {
+        fetch(apiUrl + '/api/inventory/' + itemCode.toString(), {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
         })
             .then(response => {
                 if (!response.ok) {
@@ -166,6 +209,18 @@ class Inventory extends Component {
                                             bsStyle="primary" disabled={item.inStorage}>
                                         Store
                                     </Button>
+                                    {(this.props.invMode === "admin") &&
+
+                                    <hr/>
+                                    }
+                                    {(this.props.invMode === "admin") &&
+
+                                    <Button onClick={(e) => this.handleSubmit(item, "delete", e)}
+                                            className="full-width"
+                                            bsStyle="danger">
+                                        Delete
+                                    </Button>
+                                    }
                                 </Panel.Body>
                             </Panel>
                         </Col>)
