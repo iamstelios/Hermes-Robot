@@ -7,24 +7,25 @@ import {
 import {connect} from "react-refetch";
 import apiUrl from "./APIURL";
 
+const JunctionRadius = 0.1;
 let nodes = [
-    {id: "0", label: "Shelf", color: "#FFa500", size: 7, x: 0.0, y: .1},
-    {id: "1", label: "Bob", size: 5, x: .2, y: .1},
-    {id: "2", label: "Claire", size: 5, x: 0.0, y: .3},
-    {id: "3", label: "Daniel", size: 5, x: .1, y: .4},
-    {id: "4", label: "Erica", size: 5, x: .2, y: .4},
-    {id: "5", label: "Francis", size: 5, x: .4, y: .4},
-    {id: "6", label: "Gary", size: 5, x: .4, y: .3},
-    {id: "7", label: "Harriet", size: 5, x: .3, y: 0.0},
-    {id: "8", label: "Ira", size: 5, x: .4, y: 0.0},
-    {id: "9", label: "Jamie", size: 5, x: .4, y: .2},
-    {id: "10", label: "Kelly", size: 5, x: .5, y: .1},
-    {id: "J0", label: "J0", color: "#888888", size: 15, x: .1, y: .1, labelAlignment: "above"},
-    {id: "J1", label: "J1", color: "#888888", size: 15, x: .1, y: .3},
-    {id: "J2", label: "J2", color: "#888888", size: 15, x: .3, y: .3},
-    {id: "J3", label: "J3", color: "#888888", size: 15, x: .3, y: .4},
-    {id: "J4", label: "J4", color: "#888888", size: 15, x: .3, y: .1},
-    {id: "J5", label: "J5", color: "#888888", size: 15, x: .4, y: .1}
+    {id: "0", label: "Shelf 1", color: "#FFa500", size: 7, x: 0.0, y: 1},
+    {id: "1", label: "Alice", size: 5, x: 2, y: 1},
+    {id: "2", label: "Bob", size: 5, x: 0.0, y: 3},
+    {id: "3", label: "Claire", size: 5, x: 1, y: 4},
+    {id: "4", label: "Daniel", size: 5, x: 2, y: 4},
+    {id: "5", label: "Erica", size: 5, x: 4, y: 4},
+    {id: "6", label: "Shelf 2", color: "#FFa500", size: 5, x: 4, y: 3},
+    {id: "7", label: "Gary", size: 5, x: 3, y: 0.0},
+    {id: "8", label: "Francis", size: 5, x: 4, y: 0.0},
+    {id: "9", label: "Harriet", size: 5, x: 4, y: 2},
+    {id: "10", label: "Ira", size: 5, x: 5, y: 1},
+    {id: "J0", label: "J0", color: "#888888", size: 15, x: 1, y: 1, labelAlignment: "above"},
+    {id: "J1", label: "J1", color: "#888888", size: 15, x: 1, y: 3},
+    {id: "J2", label: "J2", color: "#888888", size: 15, x: 3, y: 3},
+    {id: "J3", label: "J3", color: "#888888", size: 15, x: 3, y: 4},
+    {id: "J4", label: "J4", color: "#888888", size: 15, x: 3, y: 1},
+    {id: "J5", label: "J5", color: "#888888", size: 15, x: 4, y: 1}
 
 ];
 
@@ -94,6 +95,28 @@ function setRobotState(robot, state) {
     }
 }
 
+let angle = [
+    {id: "g", value: 0},
+    {id: "y", value: Math.PI / 2},
+    {id: "b", value: Math.PI},
+    {id: "r", value: 3 * Math.PI / 2}
+];
+
+let total_angle = [
+    {entry: "r", exit: "g", angle: Math.PI / 2},
+    {entry: "r", exit: "y", angle: Math.PI},
+    {entry: "r", exit: "b", angle: 3 * Math.PI / 2},
+    {entry: "g", exit: "y", angle: Math.PI / 2},
+    {entry: "g", exit: "b", angle: Math.PI},
+    {entry: "g", exit: "r", angle: 3 * Math.PI / 2},
+    {entry: "b", exit: "r", angle: Math.PI / 2},
+    {entry: "b", exit: "g", angle: Math.PI},
+    {entry: "b", exit: "y", angle: 3 * Math.PI / 2},
+    {entry: "y", exit: "b", angle: Math.PI / 2},
+    {entry: "y", exit: "r", angle: Math.PI},
+    {entry: "y", exit: "g", angle: 3 * Math.PI / 2},
+];
+
 class Simulation extends Component {
 
     render() {
@@ -111,7 +134,9 @@ class Simulation extends Component {
             // console.log("RENDER");
             stateFetch.value.forEach(robot => {
                 // console.log("robot is ...");
-                // console.log(robot);
+                console.log(robot);
+                let x = 0;
+                let y = 0;
                 const idString = robot.id.toString();
                 if (robot.isMoving === false) {
                     const node = nodes.find(node => node.id === robot.position.node);
@@ -126,24 +151,37 @@ class Simulation extends Component {
                     setRobotState(robot, obj);
                 } else if (robot.onJunction) {
                     const junction = nodes.find(node => node.id === robot.position.junction);
+                    // const polr = polarity.find(polr => polr.startEntr == robot.position.entrance && polr.endEntr == robot.position.exit);
+                    const entrance = robot.position.entrance;
+                    // console.log('entrance:' + entrance);
+
+                    const exit = robot.position.exit;
+                    // console.log('exit:' + exit);
+                    var current_angle = angle.find(x => x.id === entrance).value;
+                    // console.log('curr angle:' + current_angle);
+                    var total = total_angle.find(x => x.entry === entrance && x.exit === exit).angle;
+                    // console.log('total:' + total);
+                    x = junction.x + JunctionRadius * Math.sin(((robot.position.progress / 100) * total + current_angle));
+                    y = junction.y - JunctionRadius * Math.cos(((robot.position.progress / 100) * total + current_angle));
+                    // console.log('x is ' + x);
+                    // console.log('y is ' + y);
                     const obj = {
                         id: `r${idString}`,
                         label: `Hermes#${idString}`,
-                        x: junction.x,
-                        y: junction.y,
+                        x: x,
+                        y: y,
                         color: "#ff0000",
                         size: 5
                     };
                     setRobotState(robot, obj);
                 } else {
-                    // on line
                     // console.log(nodes);
                     const startNode = nodes.find(node => node.id === robot.position.startNode);
                     const endNode = nodes.find(node => node.id === robot.position.endNode);
                     if (endNode === undefined) {
-                        console.log(nodes);
-                        console.log(robot.position.endNode);
-                        console.log(robot);
+                        // console.log(nodes);
+                        // console.log(robot.position.endNode);
+                        // console.log(robot);
                     }
                     let x = (robot.position.progress * endNode.x + (100 - robot.position.progress) * startNode.x) / 100.0;
                     // console.log(`x is ${x}`);
