@@ -22,6 +22,7 @@ import Inventory from './Inventory'
 import Simulation from './Simulation'
 import Log from './Log'
 import History from './History'
+import Map from './Map'
 
 
 class App extends Component {
@@ -171,13 +172,16 @@ class App extends Component {
                                 </Well>
                             </Tab>
                             <Tab eventKey={3} title="Map">
-                                <Simulation/>
+                                <Map/>
                             </Tab>
                             <Tab eventKey={4} title="Error Log">
                                 <Log/>
                             </Tab>
                             <Tab eventKey={5} title="Request History">
                                 <History/>
+                            </Tab>
+                            <Tab eventKey={6} title="Sim">
+                                <Simulation/>
                             </Tab>
                         </Tabs>
                     </Col>
