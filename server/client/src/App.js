@@ -32,23 +32,31 @@ class App extends Component {
             userId: 1,
             invMode: "normal",
             addMode: "normal",
-            value: "",
+            name: "",
             location: "",
             level: ""
         };
 
-        this.handleChange = this.handleChange.bind(this);
+        this.handleChangeName = this.handleChangeName.bind(this);
+        this.handleChangeLocation = this.handleChangeLocation.bind(this);
+        this.handleChangeLevel = this.handleChangeLevel.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
     }
 
 
-    handleChange(e) {
-        this.setState({value: e.target.value});
+    handleChangeName(e) {
+        this.setState({name: e.target.value});
+    }
+    handleChangeLocation(e) {
+        this.setState({location: e.target.value});
+    }
+    handleChangeLevel(e) {
+        this.setState({level: e.target.value});
     }
 
     handleSubmit(e) {
         let requestor = (this.state.addMode === "admin") ? "admin" : "user";
-        let body = (this.state.addMode === "admin") ? JSON.stringify({name: this.state.value, location: this.state.location, level: this.state.level }) : JSON.stringify({name: this.state.value});
+        let body = (this.state.addMode === "admin") ? JSON.stringify({name: this.state.name, location: this.state.location, level: this.state.level }) : JSON.stringify({name: this.state.name});
         let message = (this.state.addMode === "admin") ? "Adding item" : "Requesting box...";
         fetch('/api/inventory/', {
             method: 'POST',
@@ -144,24 +152,24 @@ class App extends Component {
                                             <ControlLabel>Item name:</ControlLabel>
                                             <FormControl
                                                 type="text"
-                                                value={this.state.itemName}
+                                                value={this.state.name}
                                                 placeholder="Enter name"
-                                                onChange={this.handleChange}
+                                                onChange={this.handleChangeName}
                                             />
                                             {(this.state.addMode === "admin") && <ControlLabel>Location:</ControlLabel>}
                                             {(this.state.addMode === "admin") && <FormControl
                                                 type="text"
-                                                value={this.state.itemLocation}
+                                                value={this.state.location}
                                                 placeholder="Enter location"
-                                                onChange={this.handleChange}
+                                                onChange={this.handleChangeLocation}
                                             />}
                                             {(this.state.addMode === "admin") &&
                                             <ControlLabel>Shelf level:</ControlLabel>}
                                             {(this.state.addMode === "admin") && <FormControl
                                                 type="text"
-                                                value={this.state.itemLevel}
+                                                value={this.state.level}
                                                 placeholder="Enter level"
-                                                onChange={this.handleChange}
+                                                onChange={this.handleChangeLevel}
                                             />}
                                         </FormGroup>
                                         <Button onClick={(e) => this.handleSubmit(e)} className="full-width"
