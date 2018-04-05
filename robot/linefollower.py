@@ -388,20 +388,18 @@ class GroundMovementController:
         self.follow_line_until('r', pid_runner=self.DOCK_PID, collision=False)
 
     def exit_junction(self):
-        self._rotate_while(-120)
-        self.move_raw(100)
+        self._rotate_while(-130)
+        self.move_raw(120)
 
         if self._pkl_dir == MoveDir.LINE_LEFT:
             self._pkl_dir = MoveDir.LINE_RIGHT
         else:
             self._pkl_dir = MoveDir.LINE_LEFT
 
-        buf = RingBuf(cRight.value(), 5)
-        cRight.mode = 'COL-REFLECT'
+        cRight.mode = 'COL-COLOR'
         def cond():
-            val = cRight.value()
-            buf.push(val)
-            var = buf.var(5)
-            return var < 80 and val < 30
+            return cRight.color != 1
 
         self._rotate_while(150, cond)
+
+        cRight.mode = 'COL-REFLECT'
