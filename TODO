@@ -1,7 +1,0 @@
-- make GroundMovementController.reverse_dir more robust and always able to detect the black-white line edge
-- solder Reed sensor cables to header pins directly, otherwise they disconnect sometimes
-- make sure coloured tape is far enough for GroundMovementController.swap_line_side to work when pivoting around CoM axis
-- make lift not tilt so much when weight is on; it tilts so far that the end is below shelf height
-- install new lines from A0 sheets and setup coloured tape (junction markers far enough for swap_line_side!)
-- consider intelligent line following algorithm which detects large PID integrals and corrects itself not to come into
-  the line at a steep angle
