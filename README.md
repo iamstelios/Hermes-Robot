@@ -7,6 +7,9 @@ minimal energy consumption. The task of sorting items and remembering where they
 from people to the server and robot network. It can be used in a factory or workshop environment.
 <br />
 <br />
+[Video](https://www.youtube.com/watch?v=HbfknIbkMGc&feature=youtu.be)
+<br />
+<br />
 [Technical Report](https://github.com/iamstelios/Hermes-Robot/blob/master/Project_Hermes___Technical_Report.pdf)
 <br />
 <br />
